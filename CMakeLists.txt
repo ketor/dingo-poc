@@ -22,7 +22,7 @@ set(CMAKE_PREFIX_PATH ${OUTPUT_PATH})
 
 find_package(Threads REQUIRED)
 
-include(openssl)
+include(openssl111)
 include(zlib)
 include(gflags)
 include(glog)
