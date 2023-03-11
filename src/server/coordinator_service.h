@@ -20,6 +20,7 @@
 #include "brpc/controller.h"
 #include "brpc/server.h"
 #include "coordinator/coordinator_control.h"
+#include "engine/engine.h"
 #include "proto/coordinator.pb.h"
 
 namespace dingodb {
@@ -27,7 +28,7 @@ namespace dingodb {
 class CoordinatorServiceImpl : public pb::coordinator::CoordinatorService {
  public:
   CoordinatorServiceImpl() = default;
-
+  void SetKvEngine(std::shared_ptr<Engine> engine) { engine_ = engine; };
   void SetControl(std::shared_ptr<CoordinatorControl> coordinator_control) {
     this->coordinator_control = coordinator_control;
   };
@@ -49,6 +50,8 @@ class CoordinatorServiceImpl : public pb::coordinator::CoordinatorService {
                          pb::coordinator::GetCoordinatorMapResponse* response,
                          google::protobuf::Closure* done) override;
 
+ private:
+  std::shared_ptr<Engine> engine_;
   std::shared_ptr<CoordinatorControl> coordinator_control;
 };
 

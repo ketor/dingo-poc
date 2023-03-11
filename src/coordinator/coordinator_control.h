@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef DINGODB_COORDINATOR_COMMON_H_
-#define DINGODB_COORDINATOR_COMMON_H_
+#ifndef DINGODB_COORDINATOR_CONTROL_H_
+#define DINGODB_COORDINATOR_CONTROL_H_
 
 #include <cstdint>
 #include <map>
@@ -25,6 +25,8 @@
 #include "brpc/server.h"
 #include "bthread/types.h"
 #include "butil/scoped_lock.h"
+#include "common/meta_control.h"
+
 #include "butil/strings/stringprintf.h"
 #include "meta/meta_reader.h"
 #include "meta/meta_writer.h"
@@ -131,7 +133,7 @@ class MetaMapStorage {
   std::map<uint64_t, T> *elements_;
 };
 
-class CoordinatorControl {
+class CoordinatorControl : public MetaControl {
  public:
   CoordinatorControl(std::shared_ptr<MetaReader> meta_reader, std::shared_ptr<MetaWriter> meta_writer);
   ~CoordinatorControl();
@@ -141,24 +143,24 @@ class CoordinatorControl {
   static void GenerateRootSchemasMetaIncrement(pb::meta::Schema &root_schema, pb::meta::Schema &meta_schema,
                                                pb::meta::Schema &dingo_schema,
                                                pb::coordinator_internal::MetaIncrement &meta_increment);
-  bool Init();
-  uint64_t CreateCoordinatorId(pb::coordinator_internal::MetaIncrement &meta_increment);
-  uint64_t CreateStoreId(pb::coordinator_internal::MetaIncrement &meta_increment);
-  uint64_t CreateRegionId(pb::coordinator_internal::MetaIncrement &meta_increment);
-  uint64_t CreateSchemaId(pb::coordinator_internal::MetaIncrement &meta_increment);
-  uint64_t CreateTableId(pb::coordinator_internal::MetaIncrement &meta_increment);
+  void Init() override;
+  uint64_t CreateCoordinatorId(pb::coordinator_internal::MetaIncrement &meta_increment) override;
+  uint64_t CreateStoreId(pb::coordinator_internal::MetaIncrement &meta_increment) override;
+  uint64_t CreateRegionId(pb::coordinator_internal::MetaIncrement &meta_increment) override;
+  uint64_t CreateSchemaId(pb::coordinator_internal::MetaIncrement &meta_increment) override;
+  uint64_t CreateTableId(pb::coordinator_internal::MetaIncrement &meta_increment) override;
 
   // create region
   // in: resource_tag
   // out: new region id
   int CreateRegion(const std::string &region_name, const std::string &resource_tag, int32_t replica_num,
                    pb::common::Range region_range, uint64_t schema_id, uint64_t table_id, uint64_t &new_region_id,
-                   pb::coordinator_internal::MetaIncrement &meta_increment);
+                   pb::coordinator_internal::MetaIncrement &meta_increment) override;
 
   // drop region
   // in:  region_id
   // return: 0 or -1
-  int DropRegion(uint64_t region_id, pb::coordinator_internal::MetaIncrement &meta_increment);
+  int DropRegion(uint64_t region_id, pb::coordinator_internal::MetaIncrement &meta_increment) override;
 
   // create schema
   // in: parent_schema_id
@@ -166,7 +168,7 @@ class CoordinatorControl {
   // out: new schema_id
   // return: 0 or -1
   int CreateSchema(uint64_t parent_schema_id, std::string schema_name, uint64_t &new_schema_id,
-                   pb::coordinator_internal::MetaIncrement &meta_increment);
+                   pb::coordinator_internal::MetaIncrement &meta_increment) override;
 
   // create schema
   // in: schema_id
@@ -174,46 +176,47 @@ class CoordinatorControl {
   // out: new table_id
   // return: 0 or -1
   int CreateTable(uint64_t schema_id, const pb::meta::TableDefinition &table_definition, uint64_t &new_table_id,
-                  pb::coordinator_internal::MetaIncrement &meta_increment);
+                  pb::coordinator_internal::MetaIncrement &meta_increment) override;
 
   // create store
   // in: cluster_id
   // out: store_id, password
   // return: 0 or -1
   int CreateStore(uint64_t cluster_id, uint64_t &store_id, std::string &password,
-                  pb::coordinator_internal::MetaIncrement &meta_increment);
+                  pb::coordinator_internal::MetaIncrement &meta_increment) override;
 
   // update store map with new Store info
   // return new epoch
-  uint64_t UpdateStoreMap(const pb::common::Store &store, pb::coordinator_internal::MetaIncrement &meta_increment);
+  uint64_t UpdateStoreMap(const pb::common::Store &store,
+                          pb::coordinator_internal::MetaIncrement &meta_increment) override;
 
   // get storemap
-  void GetStoreMap(pb::common::StoreMap &store_map);
+  void GetStoreMap(pb::common::StoreMap &store_map) override;
 
   // update region map with new Region info
   // return new epoch
   uint64_t UpdateRegionMap(std::vector<pb::common::Region> &regions,
-                           pb::coordinator_internal::MetaIncrement &meta_increment);
+                           pb::coordinator_internal::MetaIncrement &meta_increment) override;
 
   // get regionmap
-  void GetRegionMap(pb::common::RegionMap &region_map);
+  void GetRegionMap(pb::common::RegionMap &region_map) override;
 
   // get schemas
-  void GetSchemas(uint64_t schema_id, std::vector<pb::meta::Schema> &schemas);
+  void GetSchemas(uint64_t schema_id, std::vector<pb::meta::Schema> &schemas) override;
 
   // get tables
-  void GetTables(uint64_t schema_id, std::vector<pb::meta::TableDefinitionWithId> &table_definition_with_ids);
+  void GetTables(uint64_t schema_id, std::vector<pb::meta::TableDefinitionWithId> &table_definition_with_ids) override;
 
   // get table
-  void GetTable(uint64_t schema_id, uint64_t table_id, pb::meta::Table &table);
+  void GetTable(uint64_t schema_id, uint64_t table_id, pb::meta::Table &table) override;
 
   // get coordinator_map
   void GetCoordinatorMap(uint64_t cluster_id, uint64_t &epoch, pb::common::Location &leader_location,
-                         std::vector<pb::common::Location> &locations) const;
+                         std::vector<pb::common::Location> &locations) const override;
 
   // on_apply callback
   // leader do need update next_xx_id, so leader call this function with update_ids=false
-  void ApplyMetaIncrement(pb::coordinator_internal::MetaIncrement &meta_increment, bool update_ids);
+  void ApplyMetaIncrement(pb::coordinator_internal::MetaIncrement &meta_increment, bool update_ids) override;
 
  private:
   // mutex
@@ -270,4 +273,4 @@ class CoordinatorControl {
 
 }  // namespace dingodb
 
-#endif  // DINGODB_COORDINATOR_COMMON_H_
+#endif  // DINGODB_COORDINATOR_CONTROL_H_

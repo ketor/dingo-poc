@@ -18,6 +18,7 @@
 #include <memory>
 
 #include "brpc/channel.h"
+#include "common/meta_control.h"
 #include "coordinator/coordinator_control.h"
 #include "coordinator/coordinator_interaction.h"
 #include "crontab/crontab.h"
@@ -51,7 +52,7 @@ class Server {
   bool InitServerID();
 
   // Init storage engines;
-  bool InitEngines();
+  bool InitEngines(MetaControl& ctl);
 
   // Init coordinator interaction
   bool InitCoordinatorInteraction();
