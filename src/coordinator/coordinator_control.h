@@ -25,9 +25,8 @@
 #include "brpc/server.h"
 #include "bthread/types.h"
 #include "butil/scoped_lock.h"
-#include "common/meta_control.h"
-
 #include "butil/strings/stringprintf.h"
+#include "common/meta_control.h"
 #include "meta/meta_reader.h"
 #include "meta/meta_writer.h"
 #include "proto/common.pb.h"
@@ -143,7 +142,7 @@ class CoordinatorControl : public MetaControl {
   static void GenerateRootSchemasMetaIncrement(pb::meta::Schema &root_schema, pb::meta::Schema &meta_schema,
                                                pb::meta::Schema &dingo_schema,
                                                pb::coordinator_internal::MetaIncrement &meta_increment);
-  void Init() override;
+  bool Init() override;
   uint64_t CreateCoordinatorId(pb::coordinator_internal::MetaIncrement &meta_increment) override;
   uint64_t CreateStoreId(pb::coordinator_internal::MetaIncrement &meta_increment) override;
   uint64_t CreateRegionId(pb::coordinator_internal::MetaIncrement &meta_increment) override;

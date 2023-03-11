@@ -98,11 +98,6 @@ int main(int argc, char *argv[]) {
   dingodb::MetaServiceImpl meta_service;
   dingodb::StoreServiceImpl store_service;
 
-  if (!dingo_server->InitEngines(coordinator_control)) {
-    LOG(ERROR) << "InitEngines failed!";
-    return -1;
-  }
-
   // raft server
   brpc::Server raft_server;
   if (is_coodinator) {
