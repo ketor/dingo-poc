@@ -101,13 +101,6 @@ int main(int argc, char *argv[]) {
   // raft server
   brpc::Server raft_server;
   if (is_coodinator) {
-    // init CoordinatorController
-
-    if (!dingo_server->InitCoordinatorControl()) {
-      LOG(ERROR) << "InitCoordinatorControl failed!";
-      return -1;
-    }
-
     coordinator_service.SetControl(dingo_server->GetCoordinatorControl());
     meta_service.SetControl(dingo_server->GetCoordinatorControl());
 
