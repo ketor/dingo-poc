@@ -89,7 +89,11 @@ int main(int argc, char *argv[]) {
   dingo_server->SetRaftEndpoint(GetRaftEndPoint(config));
 
   brpc::Server brpc_server;
-  dingodb::CoordinatorControl coordinator_control;
+  if (!dingo_server->InitEngines()) {
+    LOG(ERROR) << "InitEngines failed!";
+    return -1;
+  }
+
   dingodb::CoordinatorServiceImpl coordinator_service;
   dingodb::MetaServiceImpl meta_service;
   dingodb::StoreServiceImpl store_service;
@@ -103,9 +107,14 @@ int main(int argc, char *argv[]) {
   brpc::Server raft_server;
   if (is_coodinator) {
     // init CoordinatorController
-    coordinator_control.Init();
-    coordinator_service.SetController(&coordinator_control);
-    meta_service.SetController(&coordinator_control);
+
+    if (!dingo_server->InitCoordinatorControl()) {
+      LOG(ERROR) << "InitCoordinatorControl failed!";
+      return -1;
+    }
+
+    coordinator_service.SetControl(dingo_server->GetCoordinatorControl());
+    meta_service.SetControl(dingo_server->GetCoordinatorControl());
 
     // add service to brpc
     if (brpc_server.AddService(&coordinator_service, brpc::SERVER_DOESNT_OWN_SERVICE) != 0) {
