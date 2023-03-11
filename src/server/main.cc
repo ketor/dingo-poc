@@ -104,6 +104,11 @@ int main(int argc, char *argv[]) {
     coordinator_service.SetControl(dingo_server->GetCoordinatorControl());
     meta_service.SetControl(dingo_server->GetCoordinatorControl());
 
+    // the Engine should be init success
+    auto engine = dingo_server->GetEngine(dingodb::pb::common::Engine::ENG_RAFT_STORE);
+    coordinator_service.SetKvEngine(engine);
+    meta_service.SetKvEngine(engine);
+
     // add service to brpc
     if (brpc_server.AddService(&coordinator_service, brpc::SERVER_DOESNT_OWN_SERVICE) != 0) {
       LOG(ERROR) << "Fail to add coordinator service!";
@@ -125,15 +130,12 @@ int main(int argc, char *argv[]) {
     LOG(INFO) << "Raft server is running on " << raft_server.listen_address();
 
     // start meta region
-    auto engine = dingo_server->GetEngine(dingodb::pb::common::Engine::ENG_RAFT_STORE);
     dingodb::pb::error::Errno const status = dingo_server->StartMetaRegion(config, engine);
     if (status != dingodb::pb::error::Errno::OK) {
       LOG(INFO) << "Init RaftNode and StateMachine Failed:" << status;
       return -1;
     }
 
-    // the Engine should be init success
-    coordinator_service.SetKvEngine(engine);
     // build in-memory meta cache
     // TODO: load data from kv engine into maps
   } else if (is_store) {
