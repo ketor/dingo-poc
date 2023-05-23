@@ -36,7 +36,7 @@
 #include "rocksdb/iterator.h"
 #include "rocksdb/slice.h"
 #include "rocksdb/table.h"
-#include "rocksdb/utilities/transaction_db.h"
+//#include "rocksdb/utilities/transaction_db.h"
 #include "rocksdb/write_batch.h"
 
 namespace dingodb {

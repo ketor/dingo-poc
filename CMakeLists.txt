@@ -63,7 +63,8 @@ include(lz4)
 include(zstd)
 include(leveldb)
 include(protobuf)
-include(rocksdb)
+#include(rocksdb)
+#include(xdprocks)
 include(brpc)
 include(braft)
 include(yaml-cpp)
@@ -115,6 +116,13 @@ add_custom_target(build_proto ALL
                 VERBATIM
                 )
 
+# --------------------- begin xdprocks by zhangjie ---------------------
+#SET(ROCKSDB_INSTALL_DIR ${THIRD_PARTY_PATH}/install/xdprocks)
+SET(ROCKSDB_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/xdprocks/include" CACHE PATH "xdprocks include directory." FORCE)
+#SET(ROCKSDB_LIBRARIES "${PROJECT_SOURCE_DIR}/xdprocks/lib/libxdprocks.so" CACHE FILEPATH "xdprocks library." FORCE)
+SET(ROCKSDB_LIBRARIES "-L${PROJECT_SOURCE_DIR}/xdprocks/lib -lxdprocks" CACHE FILEPATH "xdprocks library." FORCE)
+# --------------------- end xdprocks by zhangjie ---------------------
+
 # include PROTO_HEADER
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${BRAFT_INCLUDE_DIR})
@@ -137,7 +145,7 @@ set(DYNAMIC_LIB
     ${LEVELDB_LIBRARIES}
     ${BRAFT_LIBRARIES}
     ${BRPC_LIBRARIES}
-    ${ROCKSDB_LIBRARIES}
+    #${ROCKSDB_LIBRARIES}
     ${SNAPPY_LIBRARIES}
     ${LZ4_LIBRARIES}
     ${ZSTD_LIBRARIES}
@@ -158,6 +166,16 @@ set(DYNAMIC_LIB
     Threads::Threads
     )
 
+#add_definitions(-D_GLIBCXX_USE_CXX11_ABI=0) # add for xdp by zhangjie
+set(SHARED_LIB
+    ${ROCKSDB_LIBRARIES}
+    -pthread
+    )
+
+
+message(STATUS "zhangjie --------------------------- ${ROCKSDB_INCLUDE_DIR}")
+message(STATUS "zhangjie --------------------------- ${ROCKSDB_LIBRARIES}")
+
 set(DEPEND_LIBS
     openssl
     zlib
@@ -166,7 +184,8 @@ set(DEPEND_LIBS
     leveldb
     braft
     brpc
-    rocksdb
+    #rocksdb
+    #xdprocks
     snappy
     lz4
     zstd
@@ -290,14 +309,17 @@ endif()
 target_link_libraries(dingodb_server
                       "-Xlinker \"-(\""
                       ${DYNAMIC_LIB}
+                      ${SHARED_LIB}
                       "-Xlinker \"-)\"")
 target_link_libraries(dingodb_client_store
                       "-Xlinker \"-(\""
                       ${DYNAMIC_LIB}
+                      ${SHARED_LIB}
                       "-Xlinker \"-)\"")
 target_link_libraries(dingodb_client_coordinator
                       "-Xlinker \"-(\""
                       ${DYNAMIC_LIB}
+                      ${SHARED_LIB}
                       "-Xlinker \"-)\"")
 
 add_subdirectory(src)
