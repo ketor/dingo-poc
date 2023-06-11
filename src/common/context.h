@@ -38,7 +38,7 @@ class Context {
         region_id_(0),
         delete_files_in_range_(false),
         flush_(false),
-        role_(pb::common::ClusterRole::STORE),
+        // role_(pb::common::ClusterRole::STORE),
         enable_sync_(false) {}
   Context(brpc::Controller* cntl, google::protobuf::Closure* done)
       : cntl_(cntl),
@@ -47,7 +47,7 @@ class Context {
         region_id_(0),
         delete_files_in_range_(false),
         flush_(false),
-        role_(pb::common::ClusterRole::STORE),
+        // role_(pb::common::ClusterRole::STORE),
         enable_sync_(false) {}
   Context(brpc::Controller* cntl, google::protobuf::Closure* done, google::protobuf::Message* response)
       : cntl_(cntl),
@@ -56,7 +56,7 @@ class Context {
         region_id_(0),
         delete_files_in_range_(false),
         flush_(false),
-        role_(pb::common::ClusterRole::STORE),
+        // role_(pb::common::ClusterRole::STORE),
         enable_sync_(false) {}
   ~Context() = default;
 
@@ -93,8 +93,8 @@ class Context {
   bool Flush() const { return flush_; }
   void SetFlush(bool flush) { flush_ = flush; }
 
-  pb::common::ClusterRole ClusterRole() { return role_; }
-  void SetClusterRole(pb::common::ClusterRole role) { role_ = role; }
+  // pb::common::ClusterRole ClusterRole() { return role_; }
+  // void SetClusterRole(pb::common::ClusterRole role) { role_ = role; }
 
   void EnableSyncMode() {
     enable_sync_ = true;
@@ -125,7 +125,7 @@ class Context {
   // Flush data to persistence.
   bool flush_;
   // role
-  pb::common::ClusterRole role_;
+  // pb::common::ClusterRole role_;
 
   // For sync mode
   bool enable_sync_;
