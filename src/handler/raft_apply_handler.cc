@@ -997,6 +997,14 @@ void RebuildVectorIndexHandler::Handle(std::shared_ptr<Context>, store::RegionPt
   }
 }
 
+void TxnHandler::Handle(std::shared_ptr<Context>, store::RegionPtr region, std::shared_ptr<RawEngine>,
+                        [[maybe_unused]] const pb::raft::Request &req, store::RegionMetricsPtr, uint64_t,
+                        uint64_t log_id) {
+  DINGO_LOG(INFO) << fmt::format("[txn][region({})] Handle txn, apply_log_id: {}", region->Id(), log_id);
+
+  // TODO: implement txn handler
+}
+
 std::shared_ptr<HandlerCollection> RaftApplyHandlerFactory::Build() {
   auto handler_collection = std::make_shared<HandlerCollection>();
   handler_collection->Register(std::make_shared<PutHandler>());
@@ -1009,6 +1017,7 @@ std::shared_ptr<HandlerCollection> RaftApplyHandlerFactory::Build() {
   handler_collection->Register(std::make_shared<VectorDeleteHandler>());
   handler_collection->Register(std::make_shared<RebuildVectorIndexHandler>());
   handler_collection->Register(std::make_shared<SaveRaftSnapshotHandler>());
+  handler_collection->Register(std::make_shared<TxnHandler>());
 
   return handler_collection;
 }
