@@ -28,7 +28,7 @@ namespace dingodb {
 #endif
 
 #ifndef MAJOR_VERSION
-#define MAJOR_VERSION "v0.7.0"
+#define MAJOR_VERSION "v0.8.0"
 #endif
 
 #ifndef MINOR_VERSION
@@ -36,7 +36,7 @@ namespace dingodb {
 #endif
 
 #ifndef GIT_TAG_NAME
-#define GIT_TAG_NAME "v0.7.0"
+#define GIT_TAG_NAME "v0.8.0"
 #endif
 
 #ifndef DINGO_BUILD_TYPE
