@@ -30,6 +30,8 @@
 
 namespace dingodb {
 
+extern const std::map<std::string, uint32_t> kTxnCf2Id;
+
 class Helper {
   using Errno = pb::error::Errno;
   using PbError = pb::error::Error;
@@ -178,6 +180,9 @@ class Helper {
 
   // Gen coordinator new_table_check_name
   static std::string GenNewTableCheckName(uint64_t schema_id, const std::string& table_name);
+
+  // Gen mvcc cf vector for transaction
+  static std::vector<std::string> GenMvccCfVector();
 
   // Create hard link
   static bool Link(const std::string& old_path, const std::string& new_path);
