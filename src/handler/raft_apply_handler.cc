@@ -16,6 +16,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -995,14 +996,6 @@ void RebuildVectorIndexHandler::Handle(std::shared_ptr<Context>, store::RegionPt
 
     VectorIndexManager::LaunchRebuildVectorIndex(vector_index_wrapper, true);
   }
-}
-
-void TxnHandler::Handle(std::shared_ptr<Context>, store::RegionPtr region, std::shared_ptr<RawEngine>,
-                        [[maybe_unused]] const pb::raft::Request &req, store::RegionMetricsPtr, uint64_t,
-                        uint64_t log_id) {
-  DINGO_LOG(INFO) << fmt::format("[txn][region({})] Handle txn, apply_log_id: {}", region->Id(), log_id);
-
-  // TODO: implement txn handler
 }
 
 std::shared_ptr<HandlerCollection> RaftApplyHandlerFactory::Build() {
