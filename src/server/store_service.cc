@@ -40,6 +40,8 @@ using dingodb::pb::error::Errno;
 
 namespace dingodb {
 
+DECLARE_uint32(max_prewrite_count);
+
 StoreServiceImpl::StoreServiceImpl() = default;
 
 butil::Status ValidateKvGetRequest(const dingodb::pb::store::KvGetRequest* request) {
@@ -1009,6 +1011,10 @@ void StoreServiceImpl::TxnScan(google::protobuf::RpcController* controller, cons
 butil::Status ValidateTxnPrewriteRequest(const dingodb::pb::store::TxnPrewriteRequest* request) {
   if (request->mutations_size() == 0) {
     return butil::Status(pb::error::EILLEGAL_PARAMTETERS, "mutations is empty");
+  }
+
+  if (request->mutations_size() > FLAGS_max_prewrite_count) {
+    return butil::Status(pb::error::EILLEGAL_PARAMTETERS, "mutations size is too large, max=1024");
   }
 
   if (request->primary_lock().empty()) {
