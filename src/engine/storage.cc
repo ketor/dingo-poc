@@ -41,6 +41,9 @@
 namespace dingodb {
 
 DEFINE_uint32(storage_worker_num, 10, "storage worker num");
+DEFINE_uint32(max_prewrite_count, 1024, "max prewrite count");
+
+Storage::Storage(std::shared_ptr<Engine> engine) : engine_(engine) {}
 
 Storage::Storage(std::shared_ptr<Engine> engine) : engine_(engine) {
   for (int i = 0; i < FLAGS_storage_worker_num; ++i) {
@@ -893,7 +896,7 @@ butil::Status Storage::TxnDump(std::shared_ptr<Context> ctx, const std::string& 
     txn_write_keys.push_back(txn_write_key);
 
     pb::store::TxnWriteValue txn_write_value;
-    txn_write_value.ParseFromString(kv.value());
+    txn_write_value.mutable_write_info()->ParseFromString(kv.value());
 
     txn_write_values.push_back(txn_write_value);
   }
