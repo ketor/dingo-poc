@@ -27,6 +27,7 @@
 #include "engine/snapshot.h"
 #include "engine/write_data.h"
 #include "fmt/core.h"
+#include "gflags/gflags.h"
 #include "proto/common.pb.h"
 #include "proto/error.pb.h"
 #include "proto/index.pb.h"
@@ -37,6 +38,8 @@
 #include "serial/buf.h"
 #include "vector/vector_index_utils.h"
 namespace dingodb {
+
+DEFINE_uint32(max_prewrite_count, 1024, "max prewrite count");
 
 Storage::Storage(std::shared_ptr<Engine> engine) : engine_(engine) {}
 
@@ -870,7 +873,7 @@ butil::Status Storage::TxnDump(std::shared_ptr<Context> ctx, const std::string& 
     txn_write_keys.push_back(txn_write_key);
 
     pb::store::TxnWriteValue txn_write_value;
-    txn_write_value.ParseFromString(kv.value());
+    txn_write_value.mutable_write_info()->ParseFromString(kv.value());
 
     txn_write_values.push_back(txn_write_value);
   }
