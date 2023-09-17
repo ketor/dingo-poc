@@ -1801,13 +1801,15 @@ void IndexServiceImpl::TxnGet(google::protobuf::RpcController* controller, const
 
   std::shared_ptr<Context> ctx = std::make_shared<Context>(cntl, done);
   ctx->SetRegionId(request->context().region_id()).SetCfName(Constant::kStoreDataCF);
+  ctx->SetRegionEpoch(request->context().region_epoch());
+  ctx->SetIsolationLevel(request->context().isolation_level());
   std::vector<std::string> keys;
   auto* mut_request = const_cast<dingodb::pb::index::TxnGetRequest*>(request);
   keys.emplace_back(std::move(*mut_request->release_key()));
   pb::store::TxnResultInfo txn_result_info;
 
   std::vector<pb::common::KeyValue> kvs;
-  status = storage_->TxnBatchGet(ctx, keys, txn_result_info, kvs);
+  status = storage_->TxnBatchGet(ctx, request->start_ts(), keys, txn_result_info, kvs);
   if (!status.ok()) {
     auto* err = response->mutable_error();
     err->set_errcode(static_cast<Errno>(status.error_code()));
@@ -1902,16 +1904,17 @@ void IndexServiceImpl::TxnScan(google::protobuf::RpcController* controller, cons
 
   std::shared_ptr<Context> ctx = std::make_shared<Context>(cntl, done);
   ctx->SetRegionId(request->context().region_id()).SetCfName(Constant::kStoreDataCF);
+  ctx->SetRegionEpoch(request->context().region_epoch());
+  ctx->SetIsolationLevel(request->context().isolation_level());
 
   pb::store::TxnResultInfo txn_result_info;
   std::vector<pb::common::KeyValue> kvs;
   bool has_more;
   std::string end_key;
 
-  status =
-      storage_->TxnScan(ctx, request->context().region_id(), correction_range, request->limit(), request->start_ts(),
-                        request->key_only(), request->is_reverse(), request->disable_coprocessor(),
-                        request->coprocessor(), txn_result_info, kvs, has_more, end_key);
+  status = storage_->TxnScan(ctx, request->start_ts(), correction_range, request->limit(), request->key_only(),
+                             request->is_reverse(), request->disable_coprocessor(), request->coprocessor(),
+                             txn_result_info, kvs, has_more, end_key);
   if (!status.ok()) {
     auto* err = response->mutable_error();
     err->set_errcode(static_cast<Errno>(status.error_code()));
@@ -2019,6 +2022,8 @@ void IndexServiceImpl::TxnPrewrite(google::protobuf::RpcController* controller,
 
   std::shared_ptr<Context> ctx = std::make_shared<Context>(cntl, done);
   ctx->SetRegionId(request->context().region_id()).SetCfName(Constant::kStoreDataCF);
+  ctx->SetRegionEpoch(request->context().region_epoch());
+  ctx->SetIsolationLevel(request->context().isolation_level());
 
   std::vector<pb::index::Mutation> mutations;
   for (const auto& mutation : request->mutations()) {
@@ -2104,6 +2109,8 @@ void IndexServiceImpl::TxnCommit(google::protobuf::RpcController* controller,
 
   std::shared_ptr<Context> ctx = std::make_shared<Context>(cntl, done);
   ctx->SetRegionId(request->context().region_id()).SetCfName(Constant::kStoreDataCF);
+  ctx->SetRegionEpoch(request->context().region_epoch());
+  ctx->SetIsolationLevel(request->context().isolation_level());
 
   std::vector<std::string> keys;
   for (const auto& key : request->keys()) {
@@ -2183,6 +2190,8 @@ void IndexServiceImpl::TxnCheckTxnStatus(google::protobuf::RpcController* contro
 
   std::shared_ptr<Context> ctx = std::make_shared<Context>(cntl, done);
   ctx->SetRegionId(request->context().region_id()).SetCfName(Constant::kStoreDataCF);
+  ctx->SetRegionEpoch(request->context().region_epoch());
+  ctx->SetIsolationLevel(request->context().isolation_level());
 
   pb::store::TxnResultInfo txn_result_info;
   uint64_t lock_ttl = 0;
@@ -2262,6 +2271,8 @@ void IndexServiceImpl::TxnResolveLock(google::protobuf::RpcController* controlle
 
   std::shared_ptr<Context> ctx = std::make_shared<Context>(cntl, done);
   ctx->SetRegionId(request->context().region_id()).SetCfName(Constant::kStoreDataCF);
+  ctx->SetRegionEpoch(request->context().region_epoch());
+  ctx->SetIsolationLevel(request->context().isolation_level());
 
   std::vector<std::string> keys;
   for (const auto& key : request->keys()) {
@@ -2335,6 +2346,9 @@ void IndexServiceImpl::TxnBatchGet(google::protobuf::RpcController* controller,
 
   std::shared_ptr<Context> ctx = std::make_shared<Context>(cntl, done);
   ctx->SetRegionId(request->context().region_id()).SetCfName(Constant::kStoreDataCF);
+  ctx->SetRegionEpoch(request->context().region_epoch());
+  ctx->SetIsolationLevel(request->context().isolation_level());
+
   std::vector<std::string> keys;
   for (const auto& key : request->keys()) {
     keys.emplace_back(key);
@@ -2343,7 +2357,7 @@ void IndexServiceImpl::TxnBatchGet(google::protobuf::RpcController* controller,
   pb::store::TxnResultInfo txn_result_info;
 
   std::vector<pb::common::KeyValue> kvs;
-  status = storage_->TxnBatchGet(ctx, keys, txn_result_info, kvs);
+  status = storage_->TxnBatchGet(ctx, request->start_ts(), keys, txn_result_info, kvs);
   if (!status.ok()) {
     auto* err = response->mutable_error();
     err->set_errcode(static_cast<Errno>(status.error_code()));
@@ -2431,6 +2445,9 @@ void IndexServiceImpl::TxnBatchRollback(google::protobuf::RpcController* control
 
   std::shared_ptr<Context> ctx = std::make_shared<Context>(cntl, done);
   ctx->SetRegionId(request->context().region_id()).SetCfName(Constant::kStoreDataCF);
+  ctx->SetRegionEpoch(request->context().region_epoch());
+  ctx->SetIsolationLevel(request->context().isolation_level());
+
   std::vector<std::string> keys;
   for (const auto& key : request->keys()) {
     keys.emplace_back(key);
@@ -2512,6 +2529,8 @@ void IndexServiceImpl::TxnScanLock(google::protobuf::RpcController* controller,
 
   std::shared_ptr<Context> ctx = std::make_shared<Context>(cntl, done);
   ctx->SetRegionId(request->context().region_id()).SetCfName(Constant::kStoreDataCF);
+  ctx->SetRegionEpoch(request->context().region_epoch());
+  ctx->SetIsolationLevel(request->context().isolation_level());
 
   pb::store::TxnResultInfo txn_result_info;
   std::vector<pb::store::LockInfo> locks;
@@ -2584,6 +2603,8 @@ void IndexServiceImpl::TxnHeartBeat(google::protobuf::RpcController* controller,
 
   std::shared_ptr<Context> ctx = std::make_shared<Context>(cntl, done);
   ctx->SetRegionId(request->context().region_id()).SetCfName(Constant::kStoreDataCF);
+  ctx->SetRegionEpoch(request->context().region_epoch());
+  ctx->SetIsolationLevel(request->context().isolation_level());
 
   pb::store::TxnResultInfo txn_result_info;
   uint64_t lock_ttl = 0;
@@ -2637,6 +2658,8 @@ void IndexServiceImpl::TxnGc(google::protobuf::RpcController* controller, const 
 
   std::shared_ptr<Context> ctx = std::make_shared<Context>(cntl, done);
   ctx->SetRegionId(request->context().region_id()).SetCfName(Constant::kStoreDataCF);
+  ctx->SetRegionEpoch(request->context().region_epoch());
+  ctx->SetIsolationLevel(request->context().isolation_level());
 
   pb::store::TxnResultInfo txn_result_info;
   uint64_t lock_ttl = 0;
@@ -2701,6 +2724,8 @@ void IndexServiceImpl::TxnDeleteRange(google::protobuf::RpcController* controlle
 
   std::shared_ptr<Context> ctx = std::make_shared<Context>(cntl, done);
   ctx->SetRegionId(request->context().region_id()).SetCfName(Constant::kStoreDataCF);
+  ctx->SetRegionEpoch(request->context().region_epoch());
+  ctx->SetIsolationLevel(request->context().isolation_level());
 
   status = storage_->TxnDeleteRange(ctx, request->start_key(), request->end_key());
   if (!status.ok()) {
@@ -2763,6 +2788,8 @@ void IndexServiceImpl::TxnDump(google::protobuf::RpcController* controller, cons
 
   std::shared_ptr<Context> ctx = std::make_shared<Context>(cntl, done);
   ctx->SetRegionId(request->context().region_id()).SetCfName(Constant::kStoreDataCF);
+  ctx->SetRegionEpoch(request->context().region_epoch());
+  ctx->SetIsolationLevel(request->context().isolation_level());
 
   pb::store::TxnResultInfo txn_result_info;
   std::vector<pb::store::TxnWriteKey> txn_write_keys;
