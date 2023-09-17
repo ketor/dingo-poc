@@ -85,6 +85,7 @@ void StoreServiceImpl::KvGet(google::protobuf::RpcController* controller,
 
   std::shared_ptr<Context> ctx = std::make_shared<Context>(cntl, done);
   ctx->SetRegionId(request->context().region_id()).SetCfName(Constant::kStoreDataCF);
+
   std::vector<std::string> keys;
   auto* mut_request = const_cast<dingodb::pb::store::KvGetRequest*>(request);
   keys.emplace_back(std::move(*mut_request->release_key()));
@@ -309,6 +310,7 @@ void StoreServiceImpl::KvBatchPut(google::protobuf::RpcController* controller,
 
   std::shared_ptr<Context> ctx = std::make_shared<Context>(cntl, done_guard.release(), request, response);
   ctx->SetRegionId(request->context().region_id()).SetCfName(Constant::kStoreDataCF);
+
   auto* mut_request = const_cast<dingodb::pb::store::KvBatchPutRequest*>(request);
   status = storage_->KvPut(ctx, Helper::PbRepeatedToVector(mut_request->mutable_kvs()));
   if (!status.ok()) {
@@ -376,6 +378,7 @@ void StoreServiceImpl::KvPutIfAbsent(google::protobuf::RpcController* controller
 
   std::shared_ptr<Context> ctx = std::make_shared<Context>(cntl, done_guard.release(), request, response);
   ctx->SetRegionId(request->context().region_id()).SetCfName(Constant::kStoreDataCF);
+
   auto* mut_request = const_cast<dingodb::pb::store::KvPutIfAbsentRequest*>(request);
   std::vector<pb::common::KeyValue> kvs;
   kvs.emplace_back(std::move(*mut_request->release_kv()));
@@ -521,6 +524,7 @@ void StoreServiceImpl::KvBatchDelete(google::protobuf::RpcController* controller
 
   std::shared_ptr<Context> const ctx = std::make_shared<Context>(cntl, done_guard.release(), request, response);
   ctx->SetRegionId(request->context().region_id()).SetCfName(Constant::kStoreDataCF);
+
   auto* mut_request = const_cast<dingodb::pb::store::KvBatchDeleteRequest*>(request);
   status = storage_->KvDelete(ctx, Helper::PbRepeatedToVector(mut_request->mutable_keys()));
   if (!status.ok()) {
@@ -604,6 +608,7 @@ void StoreServiceImpl::KvDeleteRange(google::protobuf::RpcController* controller
 
   std::shared_ptr<Context> const ctx = std::make_shared<Context>(cntl, done_guard.release(), request, response);
   ctx->SetRegionId(request->context().region_id()).SetCfName(Constant::kStoreDataCF);
+
   auto* mut_request = const_cast<dingodb::pb::store::KvDeleteRangeRequest*>(request);
   status = storage_->KvDeleteRange(ctx, correction_range);
   if (!status.ok()) {
@@ -664,6 +669,7 @@ void StoreServiceImpl::KvCompareAndSet(google::protobuf::RpcController* controll
 
   std::shared_ptr<Context> ctx = std::make_shared<Context>(cntl, done_guard.release(), request, response);
   ctx->SetRegionId(request->context().region_id()).SetCfName(Constant::kStoreDataCF);
+
   // auto* mut_request = const_cast<dingodb::pb::store::KvCompareAndSetRequest*>(request);
 
   status = storage_->KvCompareAndSet(ctx, {request->kv()}, {request->expect_value()}, true);
@@ -740,6 +746,7 @@ void StoreServiceImpl::KvBatchCompareAndSet(google::protobuf::RpcController* con
 
   std::shared_ptr<Context> ctx = std::make_shared<Context>(cntl, done_guard.release(), response);
   ctx->SetRegionId(request->context().region_id()).SetCfName(Constant::kStoreDataCF);
+
   auto* mut_request = const_cast<dingodb::pb::store::KvBatchCompareAndSetRequest*>(request);
 
   status = storage_->KvCompareAndSet(ctx, Helper::PbRepeatedToVector(mut_request->kvs()),
@@ -1031,13 +1038,16 @@ void StoreServiceImpl::TxnGet(google::protobuf::RpcController* controller, const
 
   std::shared_ptr<Context> ctx = std::make_shared<Context>(cntl, done);
   ctx->SetRegionId(request->context().region_id()).SetCfName(Constant::kStoreDataCF);
+  ctx->SetRegionEpoch(request->context().region_epoch());
+  ctx->SetIsolationLevel(request->context().isolation_level());
+
   std::vector<std::string> keys;
   auto* mut_request = const_cast<dingodb::pb::store::TxnGetRequest*>(request);
   keys.emplace_back(std::move(*mut_request->release_key()));
   pb::store::TxnResultInfo txn_result_info;
 
   std::vector<pb::common::KeyValue> kvs;
-  status = storage_->TxnBatchGet(ctx, keys, txn_result_info, kvs);
+  status = storage_->TxnBatchGet(ctx, request->start_ts(), keys, txn_result_info, kvs);
   if (!status.ok()) {
     auto* err = response->mutable_error();
     err->set_errcode(static_cast<Errno>(status.error_code()));
@@ -1112,16 +1122,17 @@ void StoreServiceImpl::TxnScan(google::protobuf::RpcController* controller, cons
 
   std::shared_ptr<Context> ctx = std::make_shared<Context>(cntl, done);
   ctx->SetRegionId(request->context().region_id()).SetCfName(Constant::kStoreDataCF);
+  ctx->SetRegionEpoch(request->context().region_epoch());
+  ctx->SetIsolationLevel(request->context().isolation_level());
 
   pb::store::TxnResultInfo txn_result_info;
   std::vector<pb::common::KeyValue> kvs;
   bool has_more;
   std::string end_key;
 
-  status =
-      storage_->TxnScan(ctx, request->context().region_id(), correction_range, request->limit(), request->start_ts(),
-                        request->key_only(), request->is_reverse(), request->disable_coprocessor(),
-                        request->coprocessor(), txn_result_info, kvs, has_more, end_key);
+  status = storage_->TxnScan(ctx, request->start_ts(), correction_range, request->limit(), request->key_only(),
+                             request->is_reverse(), request->disable_coprocessor(), request->coprocessor(),
+                             txn_result_info, kvs, has_more, end_key);
   if (!status.ok()) {
     auto* err = response->mutable_error();
     err->set_errcode(static_cast<Errno>(status.error_code()));
@@ -1209,6 +1220,8 @@ void StoreServiceImpl::TxnPrewrite(google::protobuf::RpcController* controller,
 
   std::shared_ptr<Context> ctx = std::make_shared<Context>(cntl, done);
   ctx->SetRegionId(request->context().region_id()).SetCfName(Constant::kStoreDataCF);
+  ctx->SetRegionEpoch(request->context().region_epoch());
+  ctx->SetIsolationLevel(request->context().isolation_level());
 
   std::vector<pb::store::Mutation> mutations;
   for (const auto& mutation : request->mutations()) {
@@ -1294,6 +1307,8 @@ void StoreServiceImpl::TxnCommit(google::protobuf::RpcController* controller,
 
   std::shared_ptr<Context> ctx = std::make_shared<Context>(cntl, done);
   ctx->SetRegionId(request->context().region_id()).SetCfName(Constant::kStoreDataCF);
+  ctx->SetRegionEpoch(request->context().region_epoch());
+  ctx->SetIsolationLevel(request->context().isolation_level());
 
   std::vector<std::string> keys;
   for (const auto& key : request->keys()) {
@@ -1373,6 +1388,8 @@ void StoreServiceImpl::TxnCheckTxnStatus(google::protobuf::RpcController* contro
 
   std::shared_ptr<Context> ctx = std::make_shared<Context>(cntl, done);
   ctx->SetRegionId(request->context().region_id()).SetCfName(Constant::kStoreDataCF);
+  ctx->SetRegionEpoch(request->context().region_epoch());
+  ctx->SetIsolationLevel(request->context().isolation_level());
 
   pb::store::TxnResultInfo txn_result_info;
   uint64_t lock_ttl = 0;
@@ -1452,6 +1469,8 @@ void StoreServiceImpl::TxnResolveLock(google::protobuf::RpcController* controlle
 
   std::shared_ptr<Context> ctx = std::make_shared<Context>(cntl, done);
   ctx->SetRegionId(request->context().region_id()).SetCfName(Constant::kStoreDataCF);
+  ctx->SetRegionEpoch(request->context().region_epoch());
+  ctx->SetIsolationLevel(request->context().isolation_level());
 
   std::vector<std::string> keys;
   for (const auto& key : request->keys()) {
@@ -1525,6 +1544,9 @@ void StoreServiceImpl::TxnBatchGet(google::protobuf::RpcController* controller,
 
   std::shared_ptr<Context> ctx = std::make_shared<Context>(cntl, done);
   ctx->SetRegionId(request->context().region_id()).SetCfName(Constant::kStoreDataCF);
+  ctx->SetRegionEpoch(request->context().region_epoch());
+  ctx->SetIsolationLevel(request->context().isolation_level());
+
   std::vector<std::string> keys;
   for (const auto& key : request->keys()) {
     keys.emplace_back(key);
@@ -1533,7 +1555,7 @@ void StoreServiceImpl::TxnBatchGet(google::protobuf::RpcController* controller,
   pb::store::TxnResultInfo txn_result_info;
 
   std::vector<pb::common::KeyValue> kvs;
-  status = storage_->TxnBatchGet(ctx, keys, txn_result_info, kvs);
+  status = storage_->TxnBatchGet(ctx, request->start_ts(), keys, txn_result_info, kvs);
   if (!status.ok()) {
     auto* err = response->mutable_error();
     err->set_errcode(static_cast<Errno>(status.error_code()));
@@ -1603,6 +1625,9 @@ void StoreServiceImpl::TxnBatchRollback(google::protobuf::RpcController* control
 
   std::shared_ptr<Context> ctx = std::make_shared<Context>(cntl, done);
   ctx->SetRegionId(request->context().region_id()).SetCfName(Constant::kStoreDataCF);
+  ctx->SetRegionEpoch(request->context().region_epoch());
+  ctx->SetIsolationLevel(request->context().isolation_level());
+
   std::vector<std::string> keys;
   for (const auto& key : request->keys()) {
     keys.emplace_back(key);
@@ -1684,6 +1709,8 @@ void StoreServiceImpl::TxnScanLock(google::protobuf::RpcController* controller,
 
   std::shared_ptr<Context> ctx = std::make_shared<Context>(cntl, done);
   ctx->SetRegionId(request->context().region_id()).SetCfName(Constant::kStoreDataCF);
+  ctx->SetRegionEpoch(request->context().region_epoch());
+  ctx->SetIsolationLevel(request->context().isolation_level());
 
   pb::store::TxnResultInfo txn_result_info;
   std::vector<pb::store::LockInfo> locks;
@@ -1756,6 +1783,8 @@ void StoreServiceImpl::TxnHeartBeat(google::protobuf::RpcController* controller,
 
   std::shared_ptr<Context> ctx = std::make_shared<Context>(cntl, done);
   ctx->SetRegionId(request->context().region_id()).SetCfName(Constant::kStoreDataCF);
+  ctx->SetRegionEpoch(request->context().region_epoch());
+  ctx->SetIsolationLevel(request->context().isolation_level());
 
   pb::store::TxnResultInfo txn_result_info;
   uint64_t lock_ttl = 0;
@@ -1809,6 +1838,8 @@ void StoreServiceImpl::TxnGc(google::protobuf::RpcController* controller, const 
 
   std::shared_ptr<Context> ctx = std::make_shared<Context>(cntl, done);
   ctx->SetRegionId(request->context().region_id()).SetCfName(Constant::kStoreDataCF);
+  ctx->SetRegionEpoch(request->context().region_epoch());
+  ctx->SetIsolationLevel(request->context().isolation_level());
 
   pb::store::TxnResultInfo txn_result_info;
   uint64_t lock_ttl = 0;
@@ -1873,6 +1904,8 @@ void StoreServiceImpl::TxnDeleteRange(google::protobuf::RpcController* controlle
 
   std::shared_ptr<Context> ctx = std::make_shared<Context>(cntl, done);
   ctx->SetRegionId(request->context().region_id()).SetCfName(Constant::kStoreDataCF);
+  ctx->SetRegionEpoch(request->context().region_epoch());
+  ctx->SetIsolationLevel(request->context().isolation_level());
 
   status = storage_->TxnDeleteRange(ctx, request->start_key(), request->end_key());
   if (!status.ok()) {
@@ -1935,6 +1968,8 @@ void StoreServiceImpl::TxnDump(google::protobuf::RpcController* controller, cons
 
   std::shared_ptr<Context> ctx = std::make_shared<Context>(cntl, done);
   ctx->SetRegionId(request->context().region_id()).SetCfName(Constant::kStoreDataCF);
+  ctx->SetRegionEpoch(request->context().region_epoch());
+  ctx->SetIsolationLevel(request->context().isolation_level());
 
   pb::store::TxnResultInfo txn_result_info;
   std::vector<pb::store::TxnWriteKey> txn_write_keys;
