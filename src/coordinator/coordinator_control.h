@@ -852,6 +852,10 @@ class CoordinatorControl : public MetaControl {
   butil::Status CleanDeletedTable(uint64_t table_id);
   butil::Status CleanDeletedIndex(uint64_t index_id);
 
+  // scan regions
+  butil::Status ScanRegions(const std::string &start_key, const std::string &end_key, int64_t limit,
+                            std::vector<pb::common::Region> &regions);
+
  private:
   butil::Status ValidateTaskListConflict(uint64_t region_id, uint64_t second_region_id);
 
@@ -901,6 +905,8 @@ class CoordinatorControl : public MetaControl {
   // 5.2 region_metrics, this map does not need to be persisted
   DingoSafeMap<uint64_t, pb::common::RegionMetrics> region_metrics_map_;
   MetaSafeMapStorage<pb::common::RegionMetrics> *region_metrics_meta_;
+  // 5.3 range->region map
+  DingoSafeStdMap<std::string, uint64_t> range_region_map_;
 
   // 6.tables
   // TableInternal is combination of Table & TableDefinition
