@@ -106,6 +106,17 @@ void CoordinatorControl::BuildTempMaps() {
     }
   }
   DINGO_LOG(INFO) << "index_name_map_safe_temp_ finished, count=" << index_name_map_safe_temp_.Size();
+
+  // copy region_map_ to range_region_map_
+  {
+    range_region_map_.Clear();
+    butil::FlatMap<uint64_t, pb::common::Region> region_map_copy;
+    region_map_copy.init(10000);
+    region_map_.GetRawMapCopy(region_map_copy);
+    for (const auto& it : region_map_copy) {
+      range_region_map_.Put(it.second.definition().range().start_key(), it.second.id());
+    }
+  }
 }
 
 // OnLeaderStart will init id_epoch_map_temp_ from id_epoch_map_ which is in state machine
@@ -1372,6 +1383,9 @@ void CoordinatorControl::ApplyMetaIncrement(pb::coordinator_internal::MetaIncrem
         // meta_write_kv
         meta_write_to_kv.push_back(region_meta_->TransformToKvValue(region.region()));
 
+        // update range_region_map_
+        range_region_map_.Put(region.region().definition().range().start_key(), region.region().id());
+
         // update table/index if this is a split region create
         const auto& new_region = region.region();
         if (new_region.region_type() == pb::common::RegionType::STORE_REGION) {
@@ -1459,6 +1473,9 @@ void CoordinatorControl::ApplyMetaIncrement(pb::coordinator_internal::MetaIncrem
           DINGO_LOG(INFO) << "ApplyMetaIncrement region UPDATE, [id=" << region.id() << "] success";
           // meta_write_kv
           meta_write_to_kv.push_back(region_meta_->TransformToKvValue(region.region()));
+
+          // update range_region_map_
+          range_region_map_.Put(region.region().definition().range().start_key(), region.region().id());
         } else {
           DINGO_LOG(WARNING) << "ApplyMetaIncrement region UPDATE, [id=" << region.id() << "] failed";
         }
@@ -1474,6 +1491,9 @@ void CoordinatorControl::ApplyMetaIncrement(pb::coordinator_internal::MetaIncrem
 
         // meta_delete_kv
         meta_delete_to_kv.push_back(region_meta_->TransformToKvValue(region.region()));
+
+        // update range_region_map_
+        range_region_map_.Erase(region.region().definition().range().start_key());
 
         // update table/index if this is a merge region delete
         const auto& new_region = region.region();
