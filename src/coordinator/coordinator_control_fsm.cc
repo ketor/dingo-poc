@@ -1384,7 +1384,17 @@ void CoordinatorControl::ApplyMetaIncrement(pb::coordinator_internal::MetaIncrem
         meta_write_to_kv.push_back(region_meta_->TransformToKvValue(region.region()));
 
         // update range_region_map_
-        range_region_map_.Put(region.region().definition().range().start_key(), region.region().id());
+        const auto& new_region_range = region.region().definition().range();
+        if (new_region_range.start_key().compare(new_region_range.end_key()) < 0) {
+          range_region_map_.Put(new_region_range.start_key(), region.region().id());
+          DINGO_LOG(INFO) << "add range_region_map_ success, region_id=[" << region.region().id() << "], start_key=["
+                          << Helper::StringToHex(region.region().definition().range().start_key()) << "]";
+        } else {
+          DINGO_LOG(INFO) << "add range_region_map_ skipped of start_key >= end_key, region_id=["
+                          << region.region().id() << "], start_key=["
+                          << Helper::StringToHex(region.region().definition().range().start_key()) << "], end_key=["
+                          << Helper::StringToHex(region.region().definition().range().end_key()) << "]";
+        }
 
         // update table/index if this is a split region create
         const auto& new_region = region.region();
@@ -1467,15 +1477,35 @@ void CoordinatorControl::ApplyMetaIncrement(pb::coordinator_internal::MetaIncrem
         }
 
       } else if (region.op_type() == pb::coordinator_internal::MetaIncrementOpType::UPDATE) {
+        // get old region
+        pb::common::Region old_region;
+        auto ret = region_map_.Get(region.id(), old_region);
+        if (ret > 0) {
+          range_region_map_.Erase(old_region.definition().range().start_key());
+        }
+        // update range_region_map_
+        const auto& new_region_range = region.region().definition().range();
+        if (new_region_range.start_key().compare(new_region_range.end_key()) < 0) {
+          range_region_map_.Put(new_region_range.start_key(), region.region().id());
+          DINGO_LOG(INFO) << "update range_region_map_ success, region_id=[" << region.region().id() << "], start_key=["
+                          << Helper::StringToHex(new_region_range.start_key()) << "], old_start_key=["
+                          << Helper::StringToHex(old_region.definition().range().start_key()) << "]";
+        } else {
+          DINGO_LOG(INFO) << "update range_region_map_ skipped of start_key >= end_key, region_id=["
+                          << region.region().id() << "], start_key=["
+                          << Helper::StringToHex(region.region().definition().range().start_key()) << "], end_key=["
+                          << Helper::StringToHex(region.region().definition().range().end_key()) << "], old_start_key=["
+                          << Helper::StringToHex(old_region.definition().range().start_key()) << "], old_end_key=["
+                          << Helper::StringToHex(old_region.definition().range().end_key()) << "]";
+        }
+
         // update region to region_map
-        int ret = region_map_.PutIfExists(region.id(), region.region());
+        ret = region_map_.PutIfExists(region.id(), region.region());
         if (ret > 0) {
           DINGO_LOG(INFO) << "ApplyMetaIncrement region UPDATE, [id=" << region.id() << "] success";
           // meta_write_kv
           meta_write_to_kv.push_back(region_meta_->TransformToKvValue(region.region()));
 
-          // update range_region_map_
-          range_region_map_.Put(region.region().definition().range().start_key(), region.region().id());
         } else {
           DINGO_LOG(WARNING) << "ApplyMetaIncrement region UPDATE, [id=" << region.id() << "] failed";
         }
@@ -1494,6 +1524,8 @@ void CoordinatorControl::ApplyMetaIncrement(pb::coordinator_internal::MetaIncrem
 
         // update range_region_map_
         range_region_map_.Erase(region.region().definition().range().start_key());
+        DINGO_LOG(INFO) << "erase range_region_map_ success, region_id=[" << region.region().id() << "], start_key=["
+                        << Helper::StringToHex(region.region().definition().range().start_key()) << "]";
 
         // update table/index if this is a merge region delete
         const auto& new_region = region.region();
