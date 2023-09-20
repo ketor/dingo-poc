@@ -153,6 +153,7 @@ DEFINE_bool(store_create_region, false, "store create region");
 DEFINE_string(db_path, "", "rocksdb path");
 
 DEFINE_bool(show_vector, false, "show vector data");
+DEFINE_uint64(safe_point, 0, "gc safe point");
 
 bvar::LatencyRecorder g_latency_recorder("dingo-store");
 
@@ -816,6 +817,13 @@ int CoordinatorSender() {
   // tso
   else if (FLAGS_method == "GenTso") {
     SendGenTso(coordinator_interaction_meta);
+  }
+
+  // gc
+  else if (FLAGS_method == "UpdateGCSafePoint") {
+    SendUpdateGCSafePoint(coordinator_interaction);
+  } else if (FLAGS_method == "GetGCSafePoint") {
+    SendGetGCSafePoint(coordinator_interaction);
   }
 
   // tools
