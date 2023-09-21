@@ -27,6 +27,7 @@
 #include "common/logging.h"
 #include "common/synchronization.h"
 #include "fmt/core.h"
+#include "gflags/gflags.h"
 #include "meta/store_meta_manager.h"
 #include "proto/common.pb.h"
 #include "proto/coordinator.pb.h"
@@ -41,6 +42,8 @@ using dingodb::pb::error::Errno;
 namespace dingodb {
 
 DECLARE_uint32(max_prewrite_count);
+
+DEFINE_uint32(max_scan_lock_limit, 5000, "Max scan lock limit");
 
 StoreServiceImpl::StoreServiceImpl() = default;
 
@@ -1665,6 +1668,10 @@ butil::Status ValidateTxnScanLockRequest(const dingodb::pb::store::TxnScanLockRe
 
   if (request->limit() == 0) {
     return butil::Status(pb::error::EILLEGAL_PARAMTETERS, "limit is 0");
+  }
+
+  if (request->limit() > FLAGS_max_scan_lock_limit) {
+    return butil::Status(pb::error::EILLEGAL_PARAMTETERS, "limit is too large, max=1024");
   }
 
   if (request->start_key().empty()) {
