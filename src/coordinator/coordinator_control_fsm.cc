@@ -112,7 +112,7 @@ void CoordinatorControl::BuildTempMaps() {
   // copy region_map_ to range_region_map_
   {
     range_region_map_.Clear();
-    butil::FlatMap<uint64_t, pb::common::Region> region_map_copy;
+    butil::FlatMap<uint64_t, pb::coordinator_internal::RegionInternal> region_map_copy;
     region_map_copy.init(10000);
     region_map_.GetRawMapCopy(region_map_copy);
     for (const auto& it : region_map_copy) {
@@ -1480,7 +1480,7 @@ void CoordinatorControl::ApplyMetaIncrement(pb::coordinator_internal::MetaIncrem
 
       } else if (region.op_type() == pb::coordinator_internal::MetaIncrementOpType::UPDATE) {
         // get old region
-        pb::common::Region old_region;
+        pb::coordinator_internal::RegionInternal old_region;
         auto ret = region_map_.Get(region.id(), old_region);
         if (ret > 0) {
           range_region_map_.Erase(old_region.definition().range().start_key());
