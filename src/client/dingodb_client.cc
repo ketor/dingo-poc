@@ -311,31 +311,31 @@ void Sender(std::shared_ptr<client::Context> ctx, const std::string& method, int
 
     // txn
     else if (method == "TxnGet") {
-      client::SendTxnGet(ctx, FLAGS_region_id);
+      client::SendTxnGet(FLAGS_region_id);
     } else if (method == "TxnScan") {
-      client::SendTxnScan(ctx, FLAGS_region_id);
+      client::SendTxnScan(FLAGS_region_id);
     } else if (method == "TxnPrewrite") {
-      client::SendTxnPrewrite(ctx, FLAGS_region_id);
+      client::SendTxnPrewrite(FLAGS_region_id);
     } else if (method == "TxnCommit") {
-      client::SendTxnCommit(ctx, FLAGS_region_id);
+      client::SendTxnCommit(FLAGS_region_id);
     } else if (method == "TxnCheckTxnStatus") {
-      client::SendTxnCheckTxnStatus(ctx, FLAGS_region_id);
+      client::SendTxnCheckTxnStatus(FLAGS_region_id);
     } else if (method == "TxnResolveLock") {
-      client::SendTxnResolveLock(ctx, FLAGS_region_id);
+      client::SendTxnResolveLock(FLAGS_region_id);
     } else if (method == "TxnBatchGet") {
-      client::SendTxnBatchGet(ctx, FLAGS_region_id);
+      client::SendTxnBatchGet(FLAGS_region_id);
     } else if (method == "TxnBatchRollback") {
-      client::SendTxnBatchRollback(ctx, FLAGS_region_id);
+      client::SendTxnBatchRollback(FLAGS_region_id);
     } else if (method == "TxnScanLock") {
-      client::SendTxnScanLock(ctx, FLAGS_region_id);
+      client::SendTxnScanLock(FLAGS_region_id);
     } else if (method == "TxnHeartBeat") {
-      client::SendTxnHeartBeat(ctx, FLAGS_region_id);
+      client::SendTxnHeartBeat(FLAGS_region_id);
     } else if (method == "TxnGC") {
-      client::SendTxnGc(ctx, FLAGS_region_id);
+      client::SendTxnGc(FLAGS_region_id);
     } else if (method == "TxnDeleteRange") {
-      client::SendTxnDeleteRange(ctx, FLAGS_region_id);
+      client::SendTxnDeleteRange(FLAGS_region_id);
     } else if (method == "TxnDump") {
-      client::SendTxnDump(ctx, FLAGS_region_id);
+      client::SendTxnDump(FLAGS_region_id);
     }
 
     // Vector operation
@@ -380,8 +380,8 @@ void Sender(std::shared_ptr<client::Context> ctx, const std::string& method, int
       client::SendVectorAddBatchDebug(FLAGS_region_id, FLAGS_dimension, FLAGS_count, FLAGS_step_count, FLAGS_start_id,
                                       FLAGS_vector_index_add_cost_file);
     } else if (method == "VectorCalcDistance") {
-      client::SendVectorCalcDistance(FLAGS_region_id, FLAGS_dimension, FLAGS_alg_type, FLAGS_metric_type,
-                                     FLAGS_left_vector_size, FLAGS_right_vector_size, FLAGS_is_return_normlize);
+      client::SendVectorCalcDistance(FLAGS_dimension, FLAGS_alg_type, FLAGS_metric_type, FLAGS_left_vector_size,
+                                     FLAGS_right_vector_size, FLAGS_is_return_normlize);
 
       // Test
     } else if (method == "TestBatchPut") {
@@ -397,7 +397,7 @@ void Sender(std::shared_ptr<client::Context> ctx, const std::string& method, int
       client::TestRegionLifecycle(FLAGS_region_id, FLAGS_raft_group, raft_addrs, FLAGS_region_count, FLAGS_thread_num,
                                   FLAGS_req_num, FLAGS_prefix);
     } else if (method == "TestDeleteRangeWhenTransferLeader") {
-      client::TestDeleteRangeWhenTransferLeader(ctx, FLAGS_region_id, FLAGS_req_num, FLAGS_prefix);
+      client::TestDeleteRangeWhenTransferLeader(FLAGS_region_id, FLAGS_req_num, FLAGS_prefix);
     }
 
     // Auto test
