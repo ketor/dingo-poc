@@ -1218,6 +1218,11 @@ butil::Status ValidateTxnPrewriteRequest(const dingodb::pb::store::TxnPrewriteRe
     return butil::Status(pb::error::EILLEGAL_PARAMTETERS, "txn_size is 0");
   }
 
+  auto status = ServiceHelper::ValidateClusterReadOnly();
+  if (!status.ok()) {
+    return status;
+  }
+
   std::vector<std::string_view> keys;
   for (const auto& mutation : request->mutations()) {
     if (mutation.key().empty()) {
@@ -1225,7 +1230,7 @@ butil::Status ValidateTxnPrewriteRequest(const dingodb::pb::store::TxnPrewriteRe
     }
     keys.push_back(mutation.key());
   }
-  auto status = ServiceHelper::ValidateRegion(request->context().region_id(), keys);
+  status = ServiceHelper::ValidateRegion(request->context().region_id(), keys);
   if (!status.ok()) {
     return status;
   }
@@ -1313,6 +1318,11 @@ butil::Status ValidateTxnCommitRequest(const dingodb::pb::store::TxnCommitReques
     return butil::Status(pb::error::EILLEGAL_PARAMTETERS, "keys is empty");
   }
 
+  auto status = ServiceHelper::ValidateClusterReadOnly();
+  if (!status.ok()) {
+    return status;
+  }
+
   std::vector<std::string_view> keys;
   for (const auto& key : request->keys()) {
     if (key.empty()) {
@@ -1320,7 +1330,7 @@ butil::Status ValidateTxnCommitRequest(const dingodb::pb::store::TxnCommitReques
     }
     keys.push_back(key);
   }
-  auto status = ServiceHelper::ValidateRegion(request->context().region_id(), keys);
+  status = ServiceHelper::ValidateRegion(request->context().region_id(), keys);
   if (!status.ok()) {
     return status;
   }
@@ -1845,10 +1855,15 @@ butil::Status ValidateTxnHeartBeatRequest(const dingodb::pb::store::TxnHeartBeat
     return butil::Status(pb::error::EILLEGAL_PARAMTETERS, "advise_lock_ttl is 0");
   }
 
+  auto status = ServiceHelper::ValidateClusterReadOnly();
+  if (!status.ok()) {
+    return status;
+  }
+
   std::vector<std::string_view> keys;
   keys.push_back(request->primary_lock());
 
-  auto status = ServiceHelper::ValidateRegion(request->context().region_id(), keys);
+  status = ServiceHelper::ValidateRegion(request->context().region_id(), keys);
   if (!status.ok()) {
     return status;
   }
@@ -1915,6 +1930,11 @@ butil::Status ValidateTxnGcRequest(const dingodb::pb::store::TxnGcRequest* reque
 
   if (request->safe_point_ts() == 0) {
     return butil::Status(pb::error::EILLEGAL_PARAMTETERS, "safe_point_ts is 0");
+  }
+
+  auto status = ServiceHelper::ValidateClusterReadOnly();
+  if (!status.ok()) {
+    return status;
   }
 
   return butil::Status();
@@ -1988,6 +2008,11 @@ butil::Status ValidateTxnDeleteRangeRequest(const dingodb::pb::store::TxnDeleteR
 
   if (request->start_key().compare(request->end_key()) > 0) {
     return butil::Status(pb::error::EILLEGAL_PARAMTETERS, "start_key is greater than end_key");
+  }
+
+  auto status = ServiceHelper::ValidateClusterReadOnly();
+  if (!status.ok()) {
+    return status;
   }
 
   return butil::Status();

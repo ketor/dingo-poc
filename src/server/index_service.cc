@@ -1517,7 +1517,7 @@ butil::Status IndexServiceImpl::ValidateTxnPrewriteRequest(const dingodb::pb::in
     }
   }
 
-  status = ServiceHelper::ValidateSystemCapacity();
+  status = ServiceHelper::ValidateClusterReadOnly();
   if (!status.ok()) {
     return status;
   }
