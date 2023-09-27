@@ -246,8 +246,8 @@ class Helper {
 
   // vector scalar index value
   static bool IsEqualVectorScalarValue(const pb::common::ScalarValue& value1, const pb::common::ScalarValue& value2);
-  // for index region, encode raw_range
-  // static std::string EncodeIndexRegionHeader(uint64_t partition_id, uint64_t vector_id);
+  // for vector index region, encode range
+  static std::string EncodeVectorIndexRegionHeader(uint64_t partition_id, uint64_t vector_id);
 
   // for index region transaction, decode vector_id from key
   static uint64_t DecodeVectorId(const std::string& value);

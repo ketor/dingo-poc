@@ -36,6 +36,7 @@
 #include <iomanip>
 #include <iostream>
 #include <map>
+#include <optional>
 #include <random>
 #include <ratio>
 #include <regex>
@@ -59,6 +60,7 @@
 #include "proto/error.pb.h"
 #include "proto/node.pb.h"
 #include "serial/buf.h"
+#include "serial/schema/long_schema.h"
 
 namespace dingodb {
 
@@ -1206,13 +1208,14 @@ bool Helper::IsEqualVectorScalarValue(const pb::common::ScalarValue& value1, con
   return false;
 }
 
-// std::string Helper::EncodeIndexRegionHeader(uint64_t partition_id, uint64_t vector_id) {
-//   Buf buf(16);
-//   buf.WriteLong(partition_id);
-//   buf.WriteLong(vector_id);
+std::string Helper::EncodeVectorIndexRegionHeader(uint64_t partition_id, uint64_t vector_id) {
+  Buf buf(16);
+  buf.WriteLong(partition_id);
+  // buf.WriteLong(vector_id);
+  DingoSchema<std::optional<int64_t>>::InternalEncodeKey(&buf, vector_id);
 
-//   return buf.GetString();
-// }
+  return buf.GetString();
+}
 
 uint64_t Helper::DecodeVectorId(const std::string& value) {
   dingodb::Buf buf(value);
