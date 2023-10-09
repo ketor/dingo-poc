@@ -2324,7 +2324,7 @@ void StoreServiceImpl::TxnPrewrite(google::protobuf::RpcController* controller,
 
   pb::store::TxnResultInfo txn_result_info;
   std::vector<std::string> already_exists;
-  uint64_t one_pc_commit_ts = 0;
+  int64_t one_pc_commit_ts = 0;
 
   std::vector<pb::common::KeyValue> kvs;
   status = storage_->TxnPrewrite(ctx, mutations, request->primary_lock(), request->start_ts(), request->lock_ttl(),
@@ -2423,7 +2423,7 @@ void StoreServiceImpl::TxnCommit(google::protobuf::RpcController* controller,
   }
 
   pb::store::TxnResultInfo txn_result_info;
-  uint64_t commit_ts = 0;
+  int64_t commit_ts = 0;
 
   std::vector<pb::common::KeyValue> kvs;
   status = storage_->TxnCommit(ctx, request->start_ts(), request->commit_ts(), keys, txn_result_info, commit_ts);
@@ -2507,8 +2507,8 @@ void StoreServiceImpl::TxnCheckTxnStatus(google::protobuf::RpcController* contro
   ctx->SetIsolationLevel(request->context().isolation_level());
 
   pb::store::TxnResultInfo txn_result_info;
-  uint64_t lock_ttl = 0;
-  uint64_t commit_ts = 0;
+  int64_t lock_ttl = 0;
+  int64_t commit_ts = 0;
   pb::store::Action action;
   pb::store::LockInfo lock_info;
 
@@ -2951,7 +2951,7 @@ void StoreServiceImpl::TxnHeartBeat(google::protobuf::RpcController* controller,
   ctx->SetIsolationLevel(request->context().isolation_level());
 
   pb::store::TxnResultInfo txn_result_info;
-  uint64_t lock_ttl = 0;
+  int64_t lock_ttl = 0;
 
   status = storage_->TxnHeartBeat(ctx, request->primary_lock(), request->start_ts(), request->advise_lock_ttl(),
                                   txn_result_info, lock_ttl);
@@ -3019,7 +3019,7 @@ void StoreServiceImpl::TxnGc(google::protobuf::RpcController* controller, const 
   ctx->SetIsolationLevel(request->context().isolation_level());
 
   pb::store::TxnResultInfo txn_result_info;
-  uint64_t lock_ttl = 0;
+  int64_t lock_ttl = 0;
 
   status = storage_->TxnGc(ctx, request->safe_point_ts(), txn_result_info);
   if (!status.ok()) {
