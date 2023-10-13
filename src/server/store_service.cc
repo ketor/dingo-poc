@@ -82,6 +82,7 @@ class KvGetTask : public TaskRunnable {
   std::string Type() override { return "KV_GET"; }
 
   void Run() override {
+    ON_SCOPE_EXIT([this]() { storage_->DecTaskCount(); });
     brpc::ClosureGuard done_guard(done_);
 
     // check if region_epoch is match
@@ -236,6 +237,7 @@ class KvBatchGetTask : public TaskRunnable {
   std::string Type() override { return "KV_BATCH_GET"; }
 
   void Run() override {
+    ON_SCOPE_EXIT([this]() { storage_->DecTaskCount(); });
     brpc::ClosureGuard done_guard(done_);
 
     // check if region_epoch is match
@@ -386,6 +388,7 @@ class KvPutTask : public TaskRunnable {
   std::string Type() override { return "KV_PUT"; }
 
   void Run() override {
+    ON_SCOPE_EXIT([this]() { storage_->DecTaskCount(); });
     DINGO_LOG(DEBUG) << "KvPutTask execute start, request: " << request_->ShortDebugString();
 
     brpc::ClosureGuard done_guard(done_);
@@ -540,6 +543,7 @@ class KvBatchPutTask : public TaskRunnable {
   std::string Type() override { return "KV_BATCH_PUT"; }
 
   void Run() override {
+    ON_SCOPE_EXIT([this]() { storage_->DecTaskCount(); });
     DINGO_LOG(DEBUG) << "KvBatchPutTask execute start, request: " << request_->ShortDebugString();
 
     brpc::ClosureGuard done_guard(done_);
@@ -701,6 +705,7 @@ class KvPutIfAbsentTask : public TaskRunnable {
   std::string Type() override { return "KV_PUT_IF_ABSENT"; }
 
   void Run() override {
+    ON_SCOPE_EXIT([this]() { storage_->DecTaskCount(); });
     brpc::ClosureGuard done_guard(done_);
 
     // check if region_epoch is match
@@ -823,6 +828,7 @@ class KvBatchPutIfAbsentTask : public TaskRunnable {
   std::string Type() override { return "KV_BATCH_PUT_IF_ABSENT"; }
 
   void Run() override {
+    ON_SCOPE_EXIT([this]() { storage_->DecTaskCount(); });
     brpc::ClosureGuard done_guard(done_);
 
     // check if region_epoch is match
@@ -1004,6 +1010,7 @@ class KvBatchDeleteTask : public TaskRunnable {
   std::string Type() override { return "KV_BATCH_DELETE"; }
 
   void Run() override {
+    ON_SCOPE_EXIT([this]() { storage_->DecTaskCount(); });
     brpc::ClosureGuard done_guard(done_);
 
     // check if region_epoch is match
@@ -1155,6 +1162,7 @@ class KvDeleteRangeTask : public TaskRunnable {
   std::string Type() override { return "KV_DELETE_RANGE"; }
 
   void Run() override {
+    ON_SCOPE_EXIT([this]() { storage_->DecTaskCount(); });
     brpc::ClosureGuard done_guard(done_);
 
     // check if region_epoch is match
@@ -1316,6 +1324,7 @@ class KvCompareAndSetTask : public TaskRunnable {
   std::string Type() override { return "KV_COMPARE_AND_SET"; }
 
   void Run() override {
+    ON_SCOPE_EXIT([this]() { storage_->DecTaskCount(); });
     brpc::ClosureGuard done_guard(done_);
 
     // check if region_epoch is match
@@ -1464,6 +1473,7 @@ class KvBatchCompareAndSetTask : public TaskRunnable {
   std::string Type() override { return "KV_BATCH_COMPARE_AND_SET"; }
 
   void Run() override {
+    ON_SCOPE_EXIT([this]() { storage_->DecTaskCount(); });
     brpc::ClosureGuard done_guard(done_);
 
     // check if region_epoch is match
@@ -1622,6 +1632,7 @@ class KvScanBeginTask : public TaskRunnable {
   std::string Type() override { return "KV_SCAN_BEGIN"; }
 
   void Run() override {
+    ON_SCOPE_EXIT([this]() { storage_->DecTaskCount(); });
     brpc::ClosureGuard done_guard(done_);
 
     // check if region_epoch is match
@@ -1809,6 +1820,7 @@ class KvScanContinueTask : public TaskRunnable {
   std::string Type() override { return "KV_SCAN_CONTINUE"; }
 
   void Run() override {
+    ON_SCOPE_EXIT([this]() { storage_->DecTaskCount(); });
     brpc::ClosureGuard done_guard(done_);
 
     // check if region_epoch is match
@@ -1958,6 +1970,7 @@ class KvScanReleaseTask : public TaskRunnable {
   std::string Type() override { return "KV_SCAN_RELEASE"; }
 
   void Run() override {
+    ON_SCOPE_EXIT([this]() { storage_->DecTaskCount(); });
     brpc::ClosureGuard done_guard(done_);
 
     // check if region_epoch is match
@@ -2101,6 +2114,7 @@ class TxnGetTask : public TaskRunnable {
   std::string Type() override { return "TXN_GET"; }
 
   void Run() override {
+    ON_SCOPE_EXIT([this]() { storage_->DecTaskCount(); });
     brpc::ClosureGuard done_guard(done_);
 
     // check if region_epoch is match
@@ -2270,6 +2284,7 @@ class TxnScanTask : public TaskRunnable {
   std::string Type() override { return "TXN_SCAN"; }
 
   void Run() override {
+    ON_SCOPE_EXIT([this]() { storage_->DecTaskCount(); });
     brpc::ClosureGuard done_guard(done_);
 
     // check if region_epoch is match
@@ -2499,6 +2514,7 @@ class TxnPrewriteTask : public TaskRunnable {
   std::string Type() override { return "TXN_PREWRITE"; }
 
   void Run() override {
+    ON_SCOPE_EXIT([this]() { storage_->DecTaskCount(); });
     DINGO_LOG(DEBUG) << "TxnPrewriteTask execute start, request: " << request_->ShortDebugString();
 
     brpc::ClosureGuard done_guard(done_);
@@ -2711,6 +2727,7 @@ class TxnCommitTask : public TaskRunnable {
   std::string Type() override { return "TXN_COMMIT"; }
 
   void Run() override {
+    ON_SCOPE_EXIT([this]() { storage_->DecTaskCount(); });
     DINGO_LOG(DEBUG) << "TxnCommitTask execute start, request: " << request_->ShortDebugString();
 
     brpc::ClosureGuard done_guard(done_);
@@ -2906,6 +2923,7 @@ class TxnCheckTxnStatusTask : public TaskRunnable {
   std::string Type() override { return "TXN_CHECK"; }
 
   void Run() override {
+    ON_SCOPE_EXIT([this]() { storage_->DecTaskCount(); });
     DINGO_LOG(DEBUG) << "TxnCheckTxnStatusTask execute start, request: " << request_->ShortDebugString();
 
     brpc::ClosureGuard done_guard(done_);
@@ -3105,6 +3123,7 @@ class TxnResolveLockTask : public TaskRunnable {
   std::string Type() override { return "TXN_RESOLVE"; }
 
   void Run() override {
+    ON_SCOPE_EXIT([this]() { storage_->DecTaskCount(); });
     DINGO_LOG(DEBUG) << "TxnResolveLockTask execute start, request: " << request_->ShortDebugString();
 
     brpc::ClosureGuard done_guard(done_);
@@ -3292,6 +3311,7 @@ class TxnBatchGetTask : public TaskRunnable {
   std::string Type() override { return "TXN_BATCH_GET"; }
 
   void Run() override {
+    ON_SCOPE_EXIT([this]() { storage_->DecTaskCount(); });
     brpc::ClosureGuard done_guard(done_);
 
     // check if region_epoch is match
@@ -3471,6 +3491,7 @@ class TxnBatchRollbackTask : public TaskRunnable {
   std::string Type() override { return "TXN_ROLLBACK"; }
 
   void Run() override {
+    ON_SCOPE_EXIT([this]() { storage_->DecTaskCount(); });
     DINGO_LOG(DEBUG) << "TxnBatchRollbackTask execute start, request: " << request_->ShortDebugString();
 
     brpc::ClosureGuard done_guard(done_);
@@ -3672,6 +3693,7 @@ class TxnScanLockTask : public TaskRunnable {
   std::string Type() override { return "TXN_SCAN_LOCK"; }
 
   void Run() override {
+    ON_SCOPE_EXIT([this]() { storage_->DecTaskCount(); });
     brpc::ClosureGuard done_guard(done_);
 
     // check if region_epoch is match
@@ -3844,6 +3866,7 @@ class TxnHeartBeatTask : public TaskRunnable {
   std::string Type() override { return "TXN_HB"; }
 
   void Run() override {
+    ON_SCOPE_EXIT([this]() { storage_->DecTaskCount(); });
     DINGO_LOG(DEBUG) << "TxnHeartBeatTask execute start, request: " << request_->ShortDebugString();
 
     brpc::ClosureGuard done_guard(done_);
@@ -4013,6 +4036,7 @@ class TxnGcTask : public TaskRunnable {
   std::string Type() override { return "TXN_GC"; }
 
   void Run() override {
+    ON_SCOPE_EXIT([this]() { storage_->DecTaskCount(); });
     DINGO_LOG(DEBUG) << "TxnGcTask execute start, request: " << request_->ShortDebugString();
 
     brpc::ClosureGuard done_guard(done_);
@@ -4190,6 +4214,7 @@ class TxnDeleteRangeTask : public TaskRunnable {
   std::string Type() override { return "TXN_DELETE_RANGE"; }
 
   void Run() override {
+    ON_SCOPE_EXIT([this]() { storage_->DecTaskCount(); });
     DINGO_LOG(DEBUG) << "TxnDeleteRangeTask execute start, request: " << request_->ShortDebugString();
 
     brpc::ClosureGuard done_guard(done_);
@@ -4357,6 +4382,7 @@ class TxnDumpTask : public TaskRunnable {
   std::string Type() override { return "TXN_DUMP"; }
 
   void Run() override {
+    ON_SCOPE_EXIT([this]() { storage_->DecTaskCount(); });
     brpc::ClosureGuard done_guard(done_);
 
     // check if region_epoch is match
