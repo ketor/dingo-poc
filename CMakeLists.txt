@@ -100,6 +100,81 @@ endif()
 
 message(STATUS "OpenMP_LIBRARY=${OPENMP_LIBRARY}")
 
+if(WITH_MKL)
+    find_package(MKL REQUIRED)
+    if(MKL_FOUND)
+        message(STATUS "The MKL is found, use intel mkl to replace openblas.")
+    else()
+        message(FATAL_ERROR "The MKL is not found, please install MKL and enable MKL.")
+    endif()
+
+    if(DEFINED ENV{MKLROOT})
+        message(STATUS "MKLROOT is: $ENV{MKLROOT}")
+    else()
+        message(FATAL_ERROR "NOT DEFINED MKLROOT VARIABLES")
+    endif()
+
+    message(STATUS "MKL_LIBRARIES=${MKL_LIBRARIES}")
+
+    set(INT_LIB "libmkl_intel_ilp64.a")
+    set(SEQ_LIB "libmkl_sequential.a")
+    set(COR_LIB "libmkl_core.a")
+
+    set(INTEL_ROOT_DEFAULT "/opt/intel")
+    set(INTEL_ROOT ${INTEL_ROOT_DEFAULT} CACHE PATH "Folder contains intel libs")
+    find_path(MKL_ROOT include/mkl.h PATHS $ENV{MKLROOT} ${INTEL_ROOT}/mkl DOC "Folder contains MKL")
+    find_path(MKL_INCLUDE_DIR NAMES mkl.h HINTS ${MKL_ROOT}/include /usr/include/mkl)
+
+    find_library(MKL_INTERFACE_LIBRARY
+             NAMES ${INT_LIB}
+             PATHS ${MKL_ROOT}/lib
+                   ${MKL_ROOT}/lib/intel64
+                   ${MKL_ROOT}/lib/intel64_win
+                   ${INTEL_ROOT}/mkl/lib/intel64)
+
+    find_library(MKL_SEQUENTIAL_LAYER_LIBRARY
+             NAMES ${SEQ_LIB}
+             PATHS ${MKL_ROOT}/lib
+                   ${MKL_ROOT}/lib/intel64
+                   ${INTEL_ROOT}/mkl/lib/intel64)
+
+    find_library(MKL_CORE_LIBRARY
+             NAMES ${COR_LIB}
+             PATHS ${MKL_ROOT}/lib
+                   ${MKL_ROOT}/lib/intel64
+                   ${INTEL_ROOT}/mkl/lib/intel64)
+
+    set(MKL_INCLUDE_DIRS ${MKL_INCLUDE_DIR})
+    set(MKL_LIBRARIES ${MKL_INTERFACE_LIBRARY} ${MKL_SEQUENTIAL_LAYER_LIBRARY} ${MKL_CORE_LIBRARY})
+
+    message(STATUS "MKL_LIBRARIES=${MKL_LIBRARIES}")
+    # set(MKL_LIBRARIES -Wl,--start-group ${MKL_LIBRARIES} -Wl,--end-group)
+    set(DEPEND_LIBS ${DEPEND_LIBS} mkl)
+    set(DYNAMIC_LIB ${DYNAMIC_LIB} ${MKL_LIBRARIES})
+
+    add_definitions(-DUSE_MKL=ON)
+
+    include(faiss-mkl)
+
+else()
+    # find_package(MKL QUIET)
+    # if(MKL_FOUND)
+    #     message(FATAL_ERROR "The MKL is found, cannot build faiss with openblas, please disable MKL.")
+    # endif()
+
+    message(STATUS "Enable USE_OPENBLAS")
+    include(openblas)
+
+    include_directories(${OPENBLAS_INCLUDE_DIR})
+    set(DEPEND_LIBS ${DEPEND_LIBS} openblas)
+    set(DYNAMIC_LIB ${DYNAMIC_LIB} ${OPENBLAS_LIBRARIES})
+
+    add_definitions(-DUSE_OPENBLAS=ON)
+
+    include(faiss-openblas)
+endif()
+
+
 include(openssl)
 include(zlib)
 include(gflags)
@@ -114,8 +189,6 @@ include(rocksdb)
 include(brpc)
 include(braft)
 include(yaml-cpp)
-include(openblas)
-include(faiss)
 include(fmt)
 include(libunwind)
 include(libbacktrace)
@@ -247,66 +320,6 @@ if(LINK_TCMALLOC)
     set(DEPEND_LIBS ${DEPEND_LIBS} gperftools)
 endif()
 
-if(WITH_MKL)
-    find_package(MKL REQUIRED)
-    if(MKL_FOUND)
-        message(STATUS "The MKL is found, use intel mkl to replace openblas.")
-    else()
-        message(FATAL_ERROR "The MKL is not found, please install MKL and enable MKL.")
-    endif()
-
-    message(STATUS "MKL_LIBRARIES=${MKL_LIBRARIES}")
-
-    set(INT_LIB "libmkl_intel_ilp64.a")
-    set(SEQ_LIB "libmkl_sequential.a")
-    set(COR_LIB "libmkl_core.a")
-
-    set(INTEL_ROOT_DEFAULT "/opt/intel")
-    set(INTEL_ROOT ${INTEL_ROOT_DEFAULT} CACHE PATH "Folder contains intel libs")
-    find_path(MKL_ROOT include/mkl.h PATHS $ENV{MKLROOT} ${INTEL_ROOT}/mkl DOC "Folder contains MKL")
-    find_path(MKL_INCLUDE_DIR NAMES mkl.h HINTS ${MKL_ROOT}/include /usr/include/mkl)
-
-    find_library(MKL_INTERFACE_LIBRARY
-             NAMES ${INT_LIB}
-             PATHS ${MKL_ROOT}/lib
-                   ${MKL_ROOT}/lib/intel64
-                   ${MKL_ROOT}/lib/intel64_win
-                   ${INTEL_ROOT}/mkl/lib/intel64)
-
-    find_library(MKL_SEQUENTIAL_LAYER_LIBRARY
-             NAMES ${SEQ_LIB}
-             PATHS ${MKL_ROOT}/lib
-                   ${MKL_ROOT}/lib/intel64
-                   ${INTEL_ROOT}/mkl/lib/intel64)
-
-    find_library(MKL_CORE_LIBRARY
-             NAMES ${COR_LIB}
-             PATHS ${MKL_ROOT}/lib
-                   ${MKL_ROOT}/lib/intel64
-                   ${INTEL_ROOT}/mkl/lib/intel64)
-
-    set(MKL_INCLUDE_DIRS ${MKL_INCLUDE_DIR})
-    set(MKL_LIBRARIES ${MKL_INTERFACE_LIBRARY} ${MKL_SEQUENTIAL_LAYER_LIBRARY} ${MKL_CORE_LIBRARY})
-
-    message(STATUS "MKL_LIBRARIES=${MKL_LIBRARIES}")
-    # set(MKL_LIBRARIES -Wl,--start-group ${MKL_LIBRARIES} -Wl,--end-group)
-    set(DYNAMIC_LIB ${DYNAMIC_LIB} ${MKL_LIBRARIES})
-
-    add_definitions(-DUSE_MKL=ON)
-
-else()
-    # find_package(MKL QUIET)
-    # if(MKL_FOUND)
-    #     message(FATAL_ERROR "The MKL is found, cannot build faiss with openblas, please disable MKL.")
-    # endif()
-
-    message(STATUS "Enable USE_OPENBLAS")
-    include_directories(${OPENBLAS_INCLUDE_DIR})
-    set(DEPEND_LIBS ${DEPEND_LIBS} openblas)
-    set(DYNAMIC_LIB ${DYNAMIC_LIB} ${OPENBLAS_LIBRARIES})
-    add_definitions(-DUSE_OPENBLAS=ON)
-endif()
-
 if(WITH_DISKANN)
     if(NOT WITH_MKL)
         message(FATAL_ERROR "The WITH_MKL is not ON, please install enable WITH_MKL to build diskann.")
@@ -430,8 +443,6 @@ add_executable(dingodb_client
 add_dependencies(DINGODB_OBJS ${DEPEND_LIBS})
 add_dependencies(dingodb_server ${DEPEND_LIBS})
 add_dependencies(dingodb_client ${DEPEND_LIBS})
-# add_dependencies(dingodb_client_store ${DEPEND_LIBS})
-# add_dependencies(dingodb_client_coordinator ${DEPEND_LIBS})
 
 if(DINGO_BUILD_STATIC)
     message(STATUS "Build DingoDB with static libraries linking")
