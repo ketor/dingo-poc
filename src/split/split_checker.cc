@@ -99,7 +99,7 @@ void MergedIterator::Next(IteratorPtr iter, int iter_pos) {
 // base physics key, contain key of multi version.
 std::string HalfSplitChecker::SplitKey(store::RegionPtr region, const pb::common::Range& physical_range,
                                        const std::vector<std::string>& cf_names, uint32_t& count) {
-  MergedIterator iter(raw_engine_, cf_names, region->Range().end_key());
+  MergedIterator iter(raw_engine_, cf_names, physical_range.end_key());
   iter.Seek(physical_range.start_key());
 
   int64_t size = 0;
@@ -143,7 +143,7 @@ std::string HalfSplitChecker::SplitKey(store::RegionPtr region, const pb::common
 // base physics key, contain key of multi version.
 std::string SizeSplitChecker::SplitKey(store::RegionPtr region, const pb::common::Range& physical_range,
                                        const std::vector<std::string>& cf_names, uint32_t& count) {
-  MergedIterator iter(raw_engine_, cf_names, region->Range().end_key());
+  MergedIterator iter(raw_engine_, cf_names, physical_range.end_key());
   iter.Seek(physical_range.start_key());
 
   int64_t size = 0;
@@ -181,7 +181,7 @@ std::string SizeSplitChecker::SplitKey(store::RegionPtr region, const pb::common
 // base logic key, ignore key of multi version.
 std::string KeysSplitChecker::SplitKey(store::RegionPtr region, const pb::common::Range& physical_range,
                                        const std::vector<std::string>& cf_names, uint32_t& count) {
-  MergedIterator iter(raw_engine_, cf_names, region->Range().end_key());
+  MergedIterator iter(raw_engine_, cf_names, physical_range.end_key());
   iter.Seek(physical_range.start_key());
 
   int64_t size = 0;
@@ -263,14 +263,7 @@ void SplitCheckTask::SplitCheck() {
   Helper::GetColumnFamilyNames(region_->Range().start_key(), raw_cf_names, txn_cf_names);
 
   // Get split key.
-  // for txn region, we need to translate the user key to padding key.
-  // for raw region, we use the user key directly.
-  if (!txn_cf_names.empty()) {
-    pb::common::Range txn_range = Helper::GetMemComparableRange(region_->Range());
-    split_key = split_checker_->SplitKey(region_, txn_range, txn_cf_names, key_count);
-  } else {
-    split_key = split_checker_->SplitKey(region_, region_->Range(), raw_cf_names, key_count);
-  }
+  split_key = split_checker_->SplitKey(region_, region_->RawRange(), raw_cf_names, key_count);
 
   // Update region key count metrics.
   if (region_metrics_ != nullptr && key_count > 0) {

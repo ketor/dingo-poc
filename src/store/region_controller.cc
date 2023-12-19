@@ -251,26 +251,13 @@ butil::Status DeleteRegionTask::DeleteRegion(std::shared_ptr<Context> ctx, int64
   // Delete data
   DINGO_LOG(DEBUG) << fmt::format("[control.region][region({})] delete region, delete data", region_id);
   if (!Helper::InvalidRange(region->Range())) {
-    std::vector<std::string> raw_cf_names;
-    std::vector<std::string> txn_cf_names;
+    std::vector<std::string> cf_names = Helper::GetColumnFamilyNames(region->Range().start_key());
+    pb::common::Range raw_range = region->RawRange();
 
-    Helper::GetColumnFamilyNames(region->Range().start_key(), raw_cf_names, txn_cf_names);
-
-    if (!raw_cf_names.empty()) {
-      status = region_raw_engine->Writer()->KvDeleteRange(raw_cf_names, region->Range());
-      if (!status.ok()) {
-        DINGO_LOG(FATAL) << fmt::format("[control.region][region({})] delete region data raw failed, error: {}",
-                                        region->Id(), status.error_str());
-      }
-    }
-
-    if (!txn_cf_names.empty()) {
-      pb::common::Range txn_range = Helper::GetMemComparableRange(region->Range());
-      status = region_raw_engine->Writer()->KvDeleteRange(txn_cf_names, txn_range);
-      if (!status.ok()) {
-        DINGO_LOG(FATAL) << fmt::format("[control.region][region({})] delete region data txn failed, error: {}",
-                                        region->Id(), status.error_str());
-      }
+    status = region_raw_engine->Writer()->KvDeleteRange(cf_names, raw_range);
+    if (!status.ok()) {
+      DINGO_LOG(FATAL) << fmt::format("[control.region][region({})] delete region data raw failed, error: {}",
+                                      region->Id(), status.error_str());
     }
   }
 
@@ -406,7 +393,7 @@ butil::Status SplitRegionTask::ValidateSplitRegion(std::shared_ptr<StoreRegionMe
                            "Not match vector index(%lu) snapshot version(%lu/%lu)", parent_region_id,
                            vector_index_wrapper->LastBuildEpochVersion(), region_epoch_version);
     }
-    if (!VectorCodec::IsValidKey(split_key)) {
+    if (!VectorCodec::IsValidUserKey(split_key)) {
       return butil::Status(pb::error::EKEY_INVALID,
                            fmt::format("Split key is invalid, length {} is wrong", split_key.size()));
     }

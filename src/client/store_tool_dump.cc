@@ -413,7 +413,8 @@ void DumpVectorIndexDb(std::shared_ptr<Context> ctx) {
       dingodb::pb::common::Vector data;
       data.ParseFromString(value);
       std::cout << fmt::format("[vector data] vector_id({}) value: dimension({}) {}",
-                               dingodb::VectorCodec::DecodeVectorId(key), data.dimension(), FormatVector(data, 10))
+                               dingodb::VectorCodec::DecodeVectorIdFromRawKey(key), data.dimension(),
+                               FormatVector(data, 10))
                 << '\n';
     }
   };
@@ -422,8 +423,8 @@ void DumpVectorIndexDb(std::shared_ptr<Context> ctx) {
     if (ctx->show_vector) {
       dingodb::pb::common::VectorScalardata data;
       data.ParseFromString(value);
-      std::cout << fmt::format("[scalar data] vector_id({}) value: {}", dingodb::VectorCodec::DecodeVectorId(key),
-                               data.ShortDebugString())
+      std::cout << fmt::format("[scalar data] vector_id({}) value: {}",
+                               dingodb::VectorCodec::DecodeVectorIdFromRawKey(key), data.ShortDebugString())
                 << '\n';
     }
   };
@@ -433,7 +434,7 @@ void DumpVectorIndexDb(std::shared_ptr<Context> ctx) {
       dingodb::pb::common::VectorTableData data;
       data.ParseFromString(value);
       std::cout << fmt::format("[table data] vector_id({}) table_key: {} table_value: {}",
-                               dingodb::VectorCodec::DecodeVectorId(key),
+                               dingodb::VectorCodec::DecodeVectorIdFromRawKey(key),
                                dingodb::Helper::StringToHex(data.table_key()),
                                dingodb::Helper::StringToHex(data.table_value()))
                 << '\n';
@@ -454,8 +455,8 @@ void DumpVectorIndexDb(std::shared_ptr<Context> ctx) {
       std::string begin_key, end_key;
       // dingodb::VectorCodec::EncodeVectorData(partition_id, 0, begin_key);
       // dingodb::VectorCodec::EncodeVectorData(partition_id, INT64_MAX, end_key);
-      dingodb::VectorCodec::EncodeVectorKey(0, partition_id, 0, begin_key);
-      dingodb::VectorCodec::EncodeVectorKey(127, partition_id, INT64_MAX, end_key);
+      dingodb::VectorCodec::EncodeVectorRawKey(0, partition_id, 0, begin_key);
+      dingodb::VectorCodec::EncodeVectorRawKey(127, partition_id, INT64_MAX, end_key);
       db->Scan(begin_key, end_key, ctx->offset, ctx->limit, vector_data_handler);
     }
 

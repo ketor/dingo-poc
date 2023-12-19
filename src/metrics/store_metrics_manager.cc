@@ -198,10 +198,10 @@ std::string StoreRegionMetrics::GetRegionMinKey(store::RegionPtr region) {
                                  Helper::StringToHex(region->Range().start_key()),
                                  Helper::StringToHex(region->Range().end_key()));
   IteratorOptions options;
-  options.upper_bound = region->Range().end_key();
+  options.upper_bound = region->RawRange().end_key();
   auto raw_engine = Server::GetInstance().GetRawEngine(region->GetRawEngineType());
   auto iter = raw_engine->Reader()->NewIterator(Constant::kStoreDataCF, options);
-  iter->Seek(region->Range().start_key());
+  iter->Seek(region->RawRange().start_key());
 
   if (!iter->Valid()) {
     return "";
@@ -211,29 +211,43 @@ std::string StoreRegionMetrics::GetRegionMinKey(store::RegionPtr region) {
   return std::string(min_key.data(), min_key.size());
 }
 
+// Function to get the maximum key in a region
 std::string StoreRegionMetrics::GetRegionMaxKey(store::RegionPtr region) {
+  // Log the region ID and the start and end keys of the range
   DINGO_LOG(INFO) << fmt::format("[metrics.region][region({})] get region max key, range[{}-{}]", region->Id(),
                                  Helper::StringToHex(region->Range().start_key()),
                                  Helper::StringToHex(region->Range().end_key()));
-  IteratorOptions options;
-  options.lower_bound = region->Range().start_key();
-  auto raw_engine = Server::GetInstance().GetRawEngine(region->GetRawEngineType());
-  auto iter = raw_engine->Reader()->NewIterator(Constant::kStoreDataCF, options);
-  iter->SeekForPrev(region->Range().end_key());
 
+  // Create an IteratorOptions object and set its lower bound to the start key of the region
+  IteratorOptions options;
+  options.lower_bound = region->RawRange().start_key();
+
+  // Get the raw engine associated with the region
+  auto raw_engine = Server::GetInstance().GetRawEngine(region->GetRawEngineType());
+
+  // Create a new iterator for the raw engine
+  auto iter = raw_engine->Reader()->NewIterator(Constant::kStoreDataCF, options);
+
+  // Move the iterator to the position just before the end key of the region
+  iter->SeekForPrev(region->RawRange().end_key());
+
+  // If the iterator is not valid (i.e., there are no keys in the range), return an empty string
   if (!iter->Valid()) {
     return "";
   }
 
+  // Get the maximum key in the range
   auto max_key = iter->Key();
+
+  // Return the maximum key as a string
   return std::string(max_key.data(), max_key.size());
 }
 
 int64_t StoreRegionMetrics::GetRegionKeyCount(store::RegionPtr region) {
   int64_t count = 0;
   auto raw_engine = Server::GetInstance().GetRawEngine(region->GetRawEngineType());
-  raw_engine->Reader()->KvCount(Constant::kStoreDataCF, region->Range().start_key(), region->Range().end_key(), count);
-
+  raw_engine->Reader()->KvCount(Constant::kStoreDataCF, region->RawRange().start_key(), region->RawRange().end_key(),
+                                count);
   return count;
 }
 
@@ -246,7 +260,7 @@ std::vector<std::pair<int64_t, int64_t>> StoreRegionMetrics::GetRegionApproximat
   valid_regions.reserve(regions.size());
   region_sizes.reserve(regions.size());
   for (const auto& region : regions) {
-    auto range = region->Range();
+    auto range = region->RawRange();
     if (range.start_key() >= range.end_key()) {
       DINGO_LOG(ERROR) << fmt::format(
           "[metrics.region][region({})] get region approximate size failed, invalid range [{}-{})", region->Id(),
@@ -262,27 +276,12 @@ std::vector<std::pair<int64_t, int64_t>> StoreRegionMetrics::GetRegionApproximat
   auto raw_engine = Server::GetInstance().GetRawEngine(regions[0]->GetRawEngineType());
   auto column_family_names = Helper::GetColumnFamilyNamesExecptMetaByRole();
 
-  // generate txn range
-  std::vector<pb::common::Range> txn_ranges;
-  txn_ranges.reserve(ranges.size());
-  for (const auto& range : ranges) {
-    pb::common::Range txn_range = Helper::GetMemComparableRange(range);
-    txn_ranges.push_back(txn_range);
-  }
-
   // for raw cf, use region's range to get approximate size
   // for txn cf, use txn range to get approximate size
   for (const auto& cf_name : column_family_names) {
-    if (Helper::IsTxnColumnFamilyName(cf_name)) {
-      auto sizes = raw_engine->GetApproximateSizes(cf_name, txn_ranges);
-      for (int i = 0; i < sizes.size(); ++i) {
-        region_sizes[i].second += sizes[i];
-      }
-    } else {
-      auto sizes = raw_engine->GetApproximateSizes(cf_name, ranges);
-      for (int i = 0; i < sizes.size(); ++i) {
-        region_sizes[i].second += sizes[i];
-      }
+    auto sizes = raw_engine->GetApproximateSizes(cf_name, ranges);
+    for (int i = 0; i < sizes.size(); ++i) {
+      region_sizes[i].second += sizes[i];
     }
   }
 
@@ -445,11 +444,11 @@ bool StoreRegionMetrics::CollectMetrics() {
         region_metrics->SetVectorDeletedCount(deleted_count);
 
         int64_t max_id = 0;
-        vector_reader->VectorGetBorderId(region->Range(), false, max_id);
+        vector_reader->VectorGetBorderId(region->RawRange(), false, max_id);
         region_metrics->SetVectorMaxId(max_id);
 
         int64_t min_id = 0;
-        vector_reader->VectorGetBorderId(region->Range(), true, min_id);
+        vector_reader->VectorGetBorderId(region->RawRange(), true, min_id);
         region_metrics->SetVectorMinId(min_id);
 
         int64_t total_memory_usage = 0;

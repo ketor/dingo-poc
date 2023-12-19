@@ -190,7 +190,7 @@ butil::Status ServiceHelper::ValidateIndexRegion(store::RegionPtr region, const 
 
   const auto& range = region->Range();
   int64_t min_vector_id = 0, max_vector_id = 0;
-  VectorCodec::DecodeRangeToVectorId(range, min_vector_id, max_vector_id);
+  VectorCodec::DecodeUserRangeToVectorId(range, min_vector_id, max_vector_id);
   for (auto vector_id : vector_ids) {
     if (vector_id < min_vector_id || vector_id >= max_vector_id) {
       return butil::Status(pb::error::EKEY_OUT_OF_RANGE,

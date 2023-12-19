@@ -91,7 +91,7 @@ butil::Status Storage::KvGet(std::shared_ptr<Context> ctx, const std::vector<std
   }
   for (const auto& key : keys) {
     std::string value;
-    auto status = reader->KvGet(ctx, key, value);
+    auto status = reader->KvGet(ctx, Helper::EncodeRawKey(key), value);
     if (!status.ok()) {
       if (pb::error::EKEY_NOT_FOUND == status.error_code()) {
         continue;
@@ -114,7 +114,8 @@ butil::Status Storage::KvPut(std::shared_ptr<Context> ctx, const std::vector<pb:
   if (writer == nullptr) {
     return butil::Status(pb::error::EENGINE_NOT_FOUND, "writer is nullptr");
   }
-  auto status = writer->KvPut(ctx, kvs);
+  auto raw_kvs = Helper::EncodeRawKvs(kvs);
+  auto status = writer->KvPut(ctx, raw_kvs);
   if (!status.ok()) {
     return status;
   }
@@ -128,7 +129,8 @@ butil::Status Storage::KvPutIfAbsent(std::shared_ptr<Context> ctx, const std::ve
   if (writer == nullptr) {
     return butil::Status(pb::error::EENGINE_NOT_FOUND, "writer is nullptr");
   }
-  auto status = writer->KvPutIfAbsent(ctx, kvs, is_atomic, key_states);
+  auto raw_kvs = Helper::EncodeRawKvs(kvs);
+  auto status = writer->KvPutIfAbsent(ctx, raw_kvs, is_atomic, key_states);
   if (!status.ok()) {
     return status;
   }
@@ -141,7 +143,8 @@ butil::Status Storage::KvDelete(std::shared_ptr<Context> ctx, const std::vector<
   if (writer == nullptr) {
     return butil::Status(pb::error::EENGINE_NOT_FOUND, "writer is nullptr");
   }
-  auto status = writer->KvDelete(ctx, keys);
+  auto raw_keys = Helper::EncodeRawKeys(keys);
+  auto status = writer->KvDelete(ctx, raw_keys);
   if (!status.ok()) {
     return status;
   }
@@ -154,7 +157,8 @@ butil::Status Storage::KvDeleteRange(std::shared_ptr<Context> ctx, const pb::com
   if (writer == nullptr) {
     return butil::Status(pb::error::EENGINE_NOT_FOUND, "writer is nullptr");
   }
-  auto status = writer->KvDeleteRange(ctx, range);
+  auto raw_range = Helper::EncodeRawRange(range);
+  auto status = writer->KvDeleteRange(ctx, raw_range);
   if (!status.ok()) {
     return status;
   }
@@ -169,7 +173,8 @@ butil::Status Storage::KvCompareAndSet(std::shared_ptr<Context> ctx, const std::
   if (writer == nullptr) {
     return butil::Status(pb::error::EENGINE_NOT_FOUND, "writer is nullptr");
   }
-  auto status = writer->KvCompareAndSet(ctx, kvs, expect_values, is_atomic, key_states);
+  auto raw_kvs = Helper::EncodeRawKvs(kvs);
+  auto status = writer->KvCompareAndSet(ctx, raw_kvs, expect_values, is_atomic, key_states);
   if (!status.ok()) {
     return status;
   }
@@ -199,7 +204,8 @@ butil::Status Storage::KvScanBegin(std::shared_ptr<Context> ctx, const std::stri
     return status;
   }
 
-  status = ScanHandler::ScanBegin(scan, region_id, range, max_fetch_cnt, key_only, disable_auto_release,
+  auto raw_range = Helper::EncodeRawRange(range);
+  status = ScanHandler::ScanBegin(scan, region_id, raw_range, max_fetch_cnt, key_only, disable_auto_release,
                                   disable_coprocessor, coprocessor, kvs);
   if (!status.ok()) {
     DINGO_LOG(ERROR) << fmt::format("ScanContext::ScanBegin failed: {}", *scan_id);
@@ -222,13 +228,16 @@ butil::Status Storage::KvScanContinue(std::shared_ptr<Context>, const std::strin
     return butil::Status(pb::error::ESCAN_NOTFOUND, "Not found scan_id");
   }
 
-  status = ScanHandler::ScanContinue(scan, scan_id, max_fetch_cnt, kvs);
+  std::vector<pb::common::KeyValue> raw_kvs;
+  status = ScanHandler::ScanContinue(scan, scan_id, max_fetch_cnt, &raw_kvs);
   if (!status.ok()) {
     manager.DeleteScan(scan_id);
     DINGO_LOG(ERROR) << fmt::format("ScanContext::ScanBegin failed scan : {} max_fetch_cnt : {}", scan_id,
                                     max_fetch_cnt);
     return status;
   }
+
+  Helper::DecodeRawKvs(raw_kvs, *kvs);
 
   return status;
 }
@@ -385,8 +394,9 @@ butil::Status Storage::VectorCount(store::RegionPtr region, pb::common::Range ra
     return status;
   }
 
+  auto raw_range = Helper::EncodeRawRange(range);
   auto vector_reader = engine_->NewVectorReader(region->GetRawEngineType());
-  status = vector_reader->VectorCount(range, count);
+  status = vector_reader->VectorCount(raw_range, count);
   if (!status.ok()) {
     return status;
   }

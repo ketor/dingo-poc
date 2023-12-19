@@ -84,6 +84,7 @@ class Region {
   void SetLeaderId(int64_t leader_id);
 
   pb::common::Range Range(bool lock = true);
+  pb::common::Range RawRange(bool lock = true);
   std::string RangeToString();
   bool CheckKeyInRange(const std::string& key);
 

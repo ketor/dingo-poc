@@ -154,6 +154,15 @@ pb::common::Range Region::Range(bool lock) {
   }
 }
 
+pb::common::Range Region::RawRange(bool lock) {
+  if (lock) {
+    BAIDU_SCOPED_LOCK(mutex_);
+    return Helper::EncodeRawRange(inner_region_.definition().range());
+  } else {
+    return Helper::EncodeRawRange(inner_region_.definition().range());
+  }
+}
+
 std::string Region::RangeToString() { return Helper::RangeToString(Range()); }
 
 bool Region::CheckKeyInRange(const std::string& key) {

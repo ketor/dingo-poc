@@ -87,6 +87,7 @@ void RebuildVectorIndexTask::Run() {
                                       vector_index_wrapper_->Id(), trace_);
     return;
   }
+
   auto state = region->State();
   if (state == pb::common::StoreRegionState::STANDBY || state == pb::common::StoreRegionState::DELETING ||
       state == pb::common::StoreRegionState::DELETED || state == pb::common::StoreRegionState::ORPHAN ||
@@ -95,6 +96,7 @@ void RebuildVectorIndexTask::Run() {
                                       vector_index_wrapper_->Id(), trace_, pb::common::StoreRegionState_Name(state));
     return;
   }
+
   if (Helper::InvalidRange(region->Range())) {
     DINGO_LOG(WARNING) << fmt::format("[vector_index.rebuild][index_id({})][trace({})] region range invalid.",
                                       vector_index_wrapper_->Id(), trace_);
@@ -511,7 +513,7 @@ butil::Status VectorIndexManager::ReplayWalToVectorIndex(VectorIndexPtr vector_i
   }
 
   int64_t min_vector_id = 0, max_vector_id = 0;
-  VectorCodec::DecodeRangeToVectorId(vector_index->Range(), min_vector_id, max_vector_id);
+  VectorCodec::DecodeUserRangeToVectorId(vector_index->Range(), min_vector_id, max_vector_id);
   std::vector<pb::common::VectorWithId> vectors;
   vectors.reserve(Constant::kBuildVectorIndexBatchSize);
   std::vector<int64_t> ids;
@@ -598,7 +600,7 @@ VectorIndexPtr VectorIndexManager::BuildVectorIndex(VectorIndexWrapperPtr vector
     return nullptr;
   }
 
-  auto range = region->Range();
+  auto range = region->RawRange();
   auto vector_index =
       VectorIndexFactory::New(vector_index_id, vector_index_wrapper->IndexParameter(), region->Epoch(), range);
   if (!vector_index) {
@@ -630,8 +632,8 @@ VectorIndexPtr VectorIndexManager::BuildVectorIndex(VectorIndexWrapperPtr vector
 
   DINGO_LOG(INFO) << fmt::format(
       "[vector_index.build][index_id({})][trace({})] Build vector index, range: [{}({})-{}({})) parallel: {}",
-      vector_index_id, trace, Helper::StringToHex(start_key), VectorCodec::DecodeVectorId(start_key),
-      Helper::StringToHex(end_key), VectorCodec::DecodeVectorId(end_key), vector_index->WriteOpParallelNum());
+      vector_index_id, trace, Helper::StringToHex(start_key), VectorCodec::DecodeVectorIdFromRawKey(start_key),
+      Helper::StringToHex(end_key), VectorCodec::DecodeVectorIdFromRawKey(end_key), vector_index->WriteOpParallelNum());
 
   int64_t start_time = Helper::TimestampMs();
   // load vector data to vector index
@@ -670,7 +672,7 @@ VectorIndexPtr VectorIndexManager::BuildVectorIndex(VectorIndexWrapperPtr vector
     pb::common::VectorWithId vector;
 
     std::string key(iter->Key());
-    vector.set_id(VectorCodec::DecodeVectorId(key));
+    vector.set_id(VectorCodec::DecodeVectorIdFromRawKey(key));
 
     std::string value(iter->Value());
     if (!vector.mutable_vector()->ParseFromString(value)) {
@@ -720,7 +722,7 @@ VectorIndexPtr VectorIndexManager::BuildVectorIndex(VectorIndexWrapperPtr vector
       "range({}) "
       "elapsed time({}/{}ms)",
       vector_index_id, trace, vector_index->WriteOpParallelNum(), count,
-      Helper::RegionEpochToString(vector_index->Epoch()), VectorCodec::DecodeRangeToString(vector_index->Range()),
+      Helper::RegionEpochToString(vector_index->Epoch()), VectorCodec::DecodeRawRangeToString(vector_index->Range()),
       upsert_use_time, Helper::TimestampMs() - start_time);
 
   return vector_index;

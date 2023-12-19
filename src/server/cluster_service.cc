@@ -221,10 +221,10 @@ void ClusterStatImpl::PrintRegionNode(std::ostream& os, const pb::common::Region
     range_info = fmt::format("<li>Range:[{}, {}); [{}/{}, {}/{})</li>",
                              Helper::StringToHex(region.definition().range().start_key()),
                              Helper::StringToHex(region.definition().range().end_key()),
-                             VectorCodec::DecodePartitionId(region.definition().range().start_key()),
-                             VectorCodec::DecodeVectorId(region.definition().range().start_key()),
-                             VectorCodec::DecodePartitionId(region.definition().range().end_key()),
-                             VectorCodec::DecodeVectorId(region.definition().range().end_key()));
+                             VectorCodec::DecodePartitionIdFromUserKey(region.definition().range().start_key()),
+                             VectorCodec::DecodeVectorIdFromUserKey(region.definition().range().start_key()),
+                             VectorCodec::DecodePartitionIdFromUserKey(region.definition().range().end_key()),
+                             VectorCodec::DecodeVectorIdFromUserKey(region.definition().range().end_key()));
   } else {
     range_info = fmt::format("<li>Range:[{}, {})</li>", Helper::StringToHex(region.definition().range().start_key()),
                              Helper::StringToHex(region.definition().range().end_key()));

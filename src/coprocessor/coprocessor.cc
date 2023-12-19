@@ -23,6 +23,7 @@
 #include <utility>
 #include <vector>
 
+#include "common/helper.h"
 #include "common/logging.h"
 #include "coprocessor/utils.h"
 #include "fmt/core.h"
@@ -196,7 +197,7 @@ butil::Status Coprocessor::Execute(IteratorPtr iter, bool key_only, size_t max_f
   butil::Status status;
   while (iter->Valid()) {
     pb::common::KeyValue kv;
-    *kv.mutable_key() = iter->Key();
+    *kv.mutable_key() = Helper::DecodeRawKey(iter->Key());
     *kv.mutable_value() = iter->Value();
     bool has_result_kv = false;
     pb::common::KeyValue result_key_value;
@@ -231,6 +232,7 @@ butil::Status Coprocessor::Execute(IteratorPtr iter, bool key_only, size_t max_f
 
   return status;
 }
+
 butil::Status Coprocessor::DoExecute(const pb::common::KeyValue& kv, bool* has_result_kv,
                                      pb::common::KeyValue* result_kv) {
   butil::Status status;

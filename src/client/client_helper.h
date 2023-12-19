@@ -169,15 +169,15 @@ class Helper {
   }
 
   static std::string CalculateVectorMiddleKey(const std::string& start_key, const std::string& end_key) {
-    int64_t partition_id = dingodb::VectorCodec::DecodePartitionId(start_key);
-    int64_t min_vector_id = dingodb::VectorCodec::DecodeVectorId(start_key);
-    int64_t max_vector_id = dingodb::VectorCodec::DecodeVectorId(end_key);
+    int64_t partition_id = dingodb::VectorCodec::DecodePartitionIdFromUserKey(start_key);
+    int64_t min_vector_id = dingodb::VectorCodec::DecodeVectorIdFromUserKey(start_key);
+    int64_t max_vector_id = dingodb::VectorCodec::DecodeVectorIdFromUserKey(end_key);
     max_vector_id = max_vector_id > 0 ? max_vector_id : INT64_MAX;
     int64_t mid_vector_id = min_vector_id + (max_vector_id - min_vector_id) / 2;
 
     DINGO_LOG(INFO) << "mid_vector_id: " << mid_vector_id;
     std::string result;
-    dingodb::VectorCodec::EncodeVectorKey(start_key[0], partition_id, mid_vector_id, result);
+    dingodb::VectorCodec::EncodeVectorUserKey(start_key[0], partition_id, mid_vector_id, result);
     return result;
   }
 };

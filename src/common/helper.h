@@ -301,6 +301,19 @@ class Helper {
   static std::string EncodeTableRegionHeader(char prefix, int64_t partition_id);
   static std::string EncodeTableRegionHeader(char prefix, int64_t partition_id, const std::string& user_key);
 
+  // for raw enocde/decode key
+  static std::string EncodeRawKey(const std::string& key);
+  static std::string EncodeRawKey(const std::string_view& key);
+  static std::string DecodeRawKey(const std::string& raw_key);
+  static std::string DecodeRawKey(const std::string_view& raw_key);
+
+  static std::vector<pb::common::KeyValue> EncodeRawKvs(const std::vector<pb::common::KeyValue>& kvs);
+  static std::vector<pb::common::KeyValue> DecodeRawKvs(const std::vector<pb::common::KeyValue>& kvs);
+  static void DecodeRawKvs(const std::vector<pb::common::KeyValue>& raw_kvs,
+                           std::vector<pb::common::KeyValue>& user_kvs);
+  static std::vector<std::string> EncodeRawKeys(const std::vector<std::string>& keys);
+  static pb::common::Range EncodeRawRange(const pb::common::Range& range);
+
   // for txn, encode start_ts/commit_ts to std::string
   static std::string EncodeTso(int64_t ts);
   // for txn, padding user key

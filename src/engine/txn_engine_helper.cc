@@ -2072,7 +2072,7 @@ butil::Status TxnEngineHelper::DoTxnCommit(RawEnginePtr raw_engine, std::shared_
 
           *(vector_add->add_vectors()) = vector_with_id;
         } else if (lock_info.lock_type() == pb::store::Op::Delete) {
-          auto vector_id = VectorCodec::DecodeVectorId(lock_info.key());
+          auto vector_id = VectorCodec::DecodeVectorIdFromUserKey(lock_info.key());
           if (vector_id == 0) {
             DINGO_LOG(FATAL) << fmt::format("[txn][region({})] DoTxnCommit, start_ts: {} commit_ts: {}", region->Id(),
                                             start_ts, commit_ts)

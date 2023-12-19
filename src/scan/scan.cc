@@ -145,7 +145,7 @@ butil::Status ScanContext::GetKeyValue(std::vector<pb::common::KeyValue>& kvs) {
 
   while (iter_->Valid()) {
     pb::common::KeyValue kv;
-    *kv.mutable_key() = iter_->Key();
+    *kv.mutable_key() = Helper::DecodeRawKey(iter_->Key());
     if (!key_only_) {
       *kv.mutable_value() = iter_->Value();
     }

@@ -300,9 +300,9 @@ static pb::common::RegionMetrics GetRegionActualMetrics(int64_t region_id) {
   int64_t size = 0;
   int32_t key_count = 0;
   std::string min_key, max_key;
-  auto range = region->Range();
+  auto range = region->RawRange();
 
-  auto column_family_names = Helper::GetColumnFamilyNames(range.start_key());
+  auto column_family_names = Helper::GetColumnFamilyNames(region->Range().start_key());
   for (const auto& name : column_family_names) {
     IteratorOptions options;
     options.upper_bound = range.end_key();
@@ -532,10 +532,12 @@ void DebugServiceImpl::Debug(google::protobuf::RpcController* controller,
           vector_index_state->set_snapshot_log_id(vector_index->SnapshotLogId());
           *vector_index_state->mutable_epoch() = vector_index->Epoch();
           auto range = vector_index->Range();
-          vector_index_state->set_start_key(fmt::format("{} {}", VectorCodec::DecodePartitionId(range.start_key()),
-                                                        VectorCodec::DecodeVectorId(range.start_key())));
-          vector_index_state->set_end_key(fmt::format("{} {}", VectorCodec::DecodePartitionId(range.end_key()),
-                                                      VectorCodec::DecodeVectorId(range.end_key())));
+          vector_index_state->set_start_key(fmt::format("{} {}",
+                                                        VectorCodec::DecodePartitionIdFromUserKey(range.start_key()),
+                                                        VectorCodec::DecodeVectorIdFromUserKey(range.start_key())));
+          vector_index_state->set_end_key(fmt::format("{} {}",
+                                                      VectorCodec::DecodePartitionIdFromUserKey(range.end_key()),
+                                                      VectorCodec::DecodeVectorIdFromUserKey(range.end_key())));
           int64_t key_count = 0;
           vector_index->GetCount(key_count);
           vector_index_state->set_key_count(key_count);
@@ -560,10 +562,12 @@ void DebugServiceImpl::Debug(google::protobuf::RpcController* controller,
           vector_index_state->set_snapshot_log_id(vector_index->SnapshotLogId());
           *vector_index_state->mutable_epoch() = vector_index->Epoch();
           auto range = vector_index->Range();
-          vector_index_state->set_start_key(fmt::format("{} {}", VectorCodec::DecodePartitionId(range.start_key()),
-                                                        VectorCodec::DecodeVectorId(range.start_key())));
-          vector_index_state->set_end_key(fmt::format("{} {}", VectorCodec::DecodePartitionId(range.end_key()),
-                                                      VectorCodec::DecodeVectorId(range.end_key())));
+          vector_index_state->set_start_key(fmt::format("{} {}",
+                                                        VectorCodec::DecodePartitionIdFromUserKey(range.start_key()),
+                                                        VectorCodec::DecodeVectorIdFromUserKey(range.start_key())));
+          vector_index_state->set_end_key(fmt::format("{} {}",
+                                                      VectorCodec::DecodePartitionIdFromUserKey(range.end_key()),
+                                                      VectorCodec::DecodeVectorIdFromUserKey(range.end_key())));
           int64_t key_count = 0;
           vector_index->GetCount(key_count);
           vector_index_state->set_key_count(key_count);
@@ -588,10 +592,12 @@ void DebugServiceImpl::Debug(google::protobuf::RpcController* controller,
           vector_index_state->set_snapshot_log_id(vector_index->SnapshotLogId());
           *vector_index_state->mutable_epoch() = vector_index->Epoch();
           auto range = vector_index->Range();
-          vector_index_state->set_start_key(fmt::format("{} {}", VectorCodec::DecodePartitionId(range.start_key()),
-                                                        VectorCodec::DecodeVectorId(range.start_key())));
-          vector_index_state->set_end_key(fmt::format("{} {}", VectorCodec::DecodePartitionId(range.end_key()),
-                                                      VectorCodec::DecodeVectorId(range.end_key())));
+          vector_index_state->set_start_key(fmt::format("{} {}",
+                                                        VectorCodec::DecodePartitionIdFromUserKey(range.start_key()),
+                                                        VectorCodec::DecodeVectorIdFromUserKey(range.start_key())));
+          vector_index_state->set_end_key(fmt::format("{} {}",
+                                                      VectorCodec::DecodePartitionIdFromUserKey(range.end_key()),
+                                                      VectorCodec::DecodeVectorIdFromUserKey(range.end_key())));
           int64_t key_count = 0;
           vector_index->GetCount(key_count);
           vector_index_state->set_key_count(key_count);

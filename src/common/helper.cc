@@ -1556,7 +1556,68 @@ std::string Helper::UnpaddingUserKey(const std::string& padding_key) {
   return std::string(buf, new_size - padding_num);
 }
 
-// for txn, encode data/write key
+// for raw, encode padding key
+std::string Helper::EncodeRawKey(const std::string& user_key) { return Helper::PaddingUserKey(user_key); }
+std::string Helper::EncodeRawKey(const std::string_view& user_key) {
+  return Helper::PaddingUserKey(std::string(user_key));
+}
+std::string Helper::DecodeRawKey(const std::string& raw_key) { return Helper::UnpaddingUserKey(raw_key); }
+std::string Helper::DecodeRawKey(const std::string_view& raw_key) {
+  return Helper::UnpaddingUserKey(std::string(raw_key));
+}
+
+std::vector<pb::common::KeyValue> Helper::EncodeRawKvs(const std::vector<pb::common::KeyValue>& user_kvs) {
+  std::vector<pb::common::KeyValue> raw_kvs;
+  raw_kvs.reserve(user_kvs.size());
+  for (const auto& kv : user_kvs) {
+    pb::common::KeyValue raw_kv;
+    raw_kv.set_key(EncodeRawKey(kv.key()));
+    raw_kv.set_value(kv.value());
+    raw_kvs.push_back(std::move(raw_kv));
+  }
+  return raw_kvs;
+}
+
+std::vector<pb::common::KeyValue> Helper::DecodeRawKvs(const std::vector<pb::common::KeyValue>& raw_kvs) {
+  std::vector<pb::common::KeyValue> user_kvs;
+  user_kvs.reserve(raw_kvs.size());
+  for (const auto& kv : raw_kvs) {
+    pb::common::KeyValue user_kv;
+    user_kv.set_key(DecodeRawKey(kv.key()));
+    user_kv.set_value(kv.value());
+    user_kvs.push_back(std::move(user_kv));
+  }
+  return user_kvs;
+}
+
+void Helper::DecodeRawKvs(const std::vector<pb::common::KeyValue>& raw_kvs,
+                          std::vector<pb::common::KeyValue>& user_kvs) {
+  user_kvs.reserve(raw_kvs.size());
+  for (const auto& kv : raw_kvs) {
+    pb::common::KeyValue user_kv;
+    user_kv.set_key(DecodeRawKey(kv.key()));
+    user_kv.set_value(kv.value());
+    user_kvs.push_back(std::move(user_kv));
+  }
+}
+
+std::vector<std::string> Helper::EncodeRawKeys(const std::vector<std::string>& user_keys) {
+  std::vector<std::string> raw_keys;
+  raw_keys.reserve(user_keys.size());
+  for (const auto& key : user_keys) {
+    raw_keys.push_back(EncodeRawKey(key));
+  }
+  return raw_keys;
+}
+
+pb::common::Range Helper::EncodeRawRange(const pb::common::Range& user_range) {
+  pb::common::Range raw_range;
+  raw_range.set_start_key(EncodeRawKey(user_range.start_key()));
+  raw_range.set_end_key(EncodeRawKey(user_range.end_key()));
+  return raw_range;
+}
+
+// for txn, encode data/lock/write key
 std::string Helper::EncodeTxnKey(const std::string& key, int64_t ts) {
   std::string padding_key = Helper::PaddingUserKey(key);
   // const std::string& padding_key = key;

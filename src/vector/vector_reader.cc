@@ -41,7 +41,7 @@ butil::Status VectorReader::QueryVectorWithId(const pb::common::Range& region_ra
                                               int64_t vector_id, bool with_vector_data,
                                               pb::common::VectorWithId& vector_with_id) {
   std::string key;
-  VectorCodec::EncodeVectorKey(region_range.start_key()[0], partition_id, vector_id, key);
+  VectorCodec::EncodeVectorRawKey(region_range.start_key()[0], partition_id, vector_id, key);
 
   std::string value;
   auto status = reader_->KvGet(Constant::kStoreDataCF, key, value);
@@ -180,7 +180,7 @@ butil::Status VectorReader::SearchVector(
 butil::Status VectorReader::QueryVectorTableData(const pb::common::Range& region_range, int64_t partition_id,
                                                  pb::common::VectorWithId& vector_with_id) {
   std::string key, value;
-  VectorCodec::EncodeVectorKey(region_range.start_key()[0], partition_id, vector_with_id.id(), key);
+  VectorCodec::EncodeVectorRawKey(region_range.start_key()[0], partition_id, vector_with_id.id(), key);
 
   auto status = reader_->KvGet(Constant::kVectorTableCF, key, value);
   if (!status.ok()) {
@@ -226,7 +226,7 @@ butil::Status VectorReader::QueryVectorScalarData(const pb::common::Range& regio
                                                   pb::common::VectorWithId& vector_with_id) {
   std::string key, value;
   // VectorCodec::EncodeVectorScalar(partition_id, vector_with_id.id(), key);
-  VectorCodec::EncodeVectorKey(region_range.start_key()[0], partition_id, vector_with_id.id(), key);
+  VectorCodec::EncodeVectorRawKey(region_range.start_key()[0], partition_id, vector_with_id.id(), key);
 
   auto status = reader_->KvGet(Constant::kVectorScalarCF, key, value);
   if (!status.ok()) {
@@ -284,7 +284,7 @@ butil::Status VectorReader::CompareVectorScalarData(const pb::common::Range& reg
   compare_result = false;
   std::string key, value;
 
-  VectorCodec::EncodeVectorKey(region_range.start_key()[0], partition_id, vector_id, key);
+  VectorCodec::EncodeVectorRawKey(region_range.start_key()[0], partition_id, vector_id, key);
 
   auto status = reader_->KvGet(Constant::kVectorScalarCF, key, value);
   if (!status.ok()) {
@@ -552,7 +552,7 @@ butil::Status VectorReader::GetBorderId(const pb::common::Range& region_range, b
     }
 
     std::string key(iter->Key());
-    vector_id = VectorCodec::DecodeVectorId(key);
+    vector_id = VectorCodec::DecodeVectorIdFromRawKey(key);
   } else {
     IteratorOptions options;
     options.lower_bound = start_key;
@@ -577,7 +577,7 @@ butil::Status VectorReader::GetBorderId(const pb::common::Range& region_range, b
     }
 
     std::string key(iter->Key());
-    vector_id = VectorCodec::DecodeVectorId(key);
+    vector_id = VectorCodec::DecodeVectorIdFromRawKey(key);
   }
 
   return butil::Status::OK();
@@ -587,7 +587,7 @@ butil::Status VectorReader::GetBorderId(const pb::common::Range& region_range, b
 butil::Status VectorReader::ScanVectorId(std::shared_ptr<Engine::VectorReader::Context> ctx,
                                          std::vector<int64_t>& vector_ids) {
   std::string seek_key;
-  VectorCodec::EncodeVectorKey(ctx->region_range.start_key()[0], ctx->partition_id, ctx->start_id, seek_key);
+  VectorCodec::EncodeVectorRawKey(ctx->region_range.start_key()[0], ctx->partition_id, ctx->start_id, seek_key);
   std::string range_start_key = ctx->region_range.start_key();
   std::string range_end_key = ctx->region_range.end_key();
 
@@ -614,7 +614,7 @@ butil::Status VectorReader::ScanVectorId(std::shared_ptr<Engine::VectorReader::C
       pb::common::VectorWithId vector;
 
       std::string key(iter->Key());
-      auto vector_id = VectorCodec::DecodeVectorId(key);
+      auto vector_id = VectorCodec::DecodeVectorIdFromRawKey(key);
       if (vector_id == 0 || vector_id == INT64_MAX || vector_id < 0) {
         continue;
       }
@@ -668,7 +668,7 @@ butil::Status VectorReader::ScanVectorId(std::shared_ptr<Engine::VectorReader::C
       pb::common::VectorWithId vector;
 
       std::string key(iter->Key());
-      auto vector_id = VectorCodec::DecodeVectorId(key);
+      auto vector_id = VectorCodec::DecodeVectorIdFromRawKey(key);
       if (vector_id == 0 || vector_id == INT64_MAX || vector_id < 0) {
         continue;
       }
@@ -767,7 +767,7 @@ butil::Status VectorReader::DoVectorSearchForScalarPreFilter(
     bool compare_result = lambda_scalar_compare_function(internal_vector_scalar);
     if (compare_result) {
       std::string key(iter->Key());
-      int64_t internal_vector_id = VectorCodec::DecodeVectorId(key);
+      int64_t internal_vector_id = VectorCodec::DecodeVectorIdFromRawKey(key);
       if (0 == internal_vector_id) {
         std::string s = fmt::format("VectorCodec::DecodeVectorId failed key : {}", Helper::StringToHex(key));
         DINGO_LOG(ERROR) << s;
@@ -1048,7 +1048,7 @@ butil::Status VectorReader::DoVectorSearchForScalarPreFilterDebug(
     bool compare_result = lambda_scalar_compare_function(internal_vector_scalar);
     if (compare_result) {
       std::string key(iter->Key());
-      int64_t internal_vector_id = VectorCodec::DecodeVectorId(key);
+      int64_t internal_vector_id = VectorCodec::DecodeVectorIdFromRawKey(key);
       if (0 == internal_vector_id) {
         std::string s = fmt::format("VectorCodec::DecodeVectorId failed key : {}", Helper::StringToHex(key));
         DINGO_LOG(ERROR) << s;
@@ -1225,7 +1225,7 @@ butil::Status VectorReader::BruteForceSearch(VectorIndexWrapperPtr vector_index,
   // scan data from raw engine
   while (iterator->Valid()) {
     std::string key(iterator->Key());
-    auto vector_id = VectorCodec::DecodeVectorId(key);
+    auto vector_id = VectorCodec::DecodeVectorIdFromRawKey(key);
     if (vector_id == 0 || vector_id == INT64_MAX || vector_id < 0) {
       iterator->Next();
       continue;
@@ -1384,7 +1384,7 @@ butil::Status VectorReader::BruteForceRangeSearch(VectorIndexWrapperPtr vector_i
   // scan data from raw engine
   while (iterator->Valid()) {
     std::string key(iterator->Key());
-    auto vector_id = VectorCodec::DecodeVectorId(key);
+    auto vector_id = VectorCodec::DecodeVectorIdFromRawKey(key);
     if (vector_id == 0 || vector_id == INT64_MAX || vector_id < 0) {
       iterator->Next();
       continue;

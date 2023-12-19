@@ -834,7 +834,7 @@ static pb::common::Range GenCountRange(store::RegionPtr region, int64_t start_ve
     range.set_start_key(region->Range().start_key());
   } else {
     std::string key;
-    VectorCodec::EncodeVectorKey(region_start_key[0], region_part_id, start_vector_id, key);
+    VectorCodec::EncodeVectorUserKey(region_start_key[0], region_part_id, start_vector_id, key);
     range.set_start_key(key);
   }
 
@@ -842,7 +842,7 @@ static pb::common::Range GenCountRange(store::RegionPtr region, int64_t start_ve
     range.set_end_key(region->Range().end_key());
   } else {
     std::string key;
-    VectorCodec::EncodeVectorKey(region_start_key[0], region_part_id, end_vector_id, key);
+    VectorCodec::EncodeVectorUserKey(region_start_key[0], region_part_id, end_vector_id, key);
     range.set_end_key(key);
   }
 
@@ -1449,7 +1449,7 @@ static butil::Status ValidateTxnPrewriteRequest(StoragePtr storage, const pb::st
 
   std::vector<int64_t> vector_ids;
   for (const auto& mutation : request->mutations()) {
-    int64_t vector_id = VectorCodec::DecodeVectorId(mutation.key());
+    int64_t vector_id = VectorCodec::DecodeVectorIdFromUserKey(mutation.key());
     if (vector_id == 0) {
       return butil::Status(pb::error::EILLEGAL_PARAMTETERS, "Param vector id is error");
     }
@@ -1593,7 +1593,7 @@ static butil::Status ValidateTxnCommitRequest(const pb::store::TxnCommitRequest*
 
   std::vector<int64_t> vector_ids;
   for (const auto& key : request->keys()) {
-    int64_t vector_id = VectorCodec::DecodeVectorId(key);
+    int64_t vector_id = VectorCodec::DecodeVectorIdFromUserKey(key);
     if (vector_id == 0) {
       return butil::Status(pb::error::EILLEGAL_PARAMTETERS, "Param vector id is error");
     }

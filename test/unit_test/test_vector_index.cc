@@ -62,10 +62,10 @@ pb::common::RegionEpoch GenEpoch(int version) {
 pb::common::Range GenRange(int start_vector_id, int end_vector_id) {
   pb::common::Range range;
   std::string start_key;
-  VectorCodec::EncodeVectorKey('r', 1000, start_vector_id, start_key);
+  VectorCodec::EncodeVectorUserKey('r', 1000, start_vector_id, start_key);
   range.set_start_key(start_key);
   std::string end_key;
-  VectorCodec::EncodeVectorKey('r', 1000, end_vector_id, end_key);
+  VectorCodec::EncodeVectorUserKey('r', 1000, end_vector_id, end_key);
   range.set_end_key(end_key);
 
   return range;

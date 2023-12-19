@@ -25,17 +25,25 @@ namespace dingodb {
 
 class VectorCodec {
  public:
-  static void EncodeVectorKey(char prefix, int64_t partition_id, int64_t vector_id, std::string& result);
+  static void EncodeVectorRawKey(char prefix, int64_t partition_id, int64_t vector_id, std::string& result);
+  static void EncodeVectorUserKey(char prefix, int64_t partition_id, int64_t vector_id, std::string& result);
 
-  static int64_t DecodeVectorId(const std::string& value);
-  static int64_t DecodePartitionId(const std::string& value);
+  static int64_t DecodeVectorIdFromRawKey(const std::string& raw_key);
+  static int64_t DecodePartitionIdFromRawKey(const std::string& raw_key);
 
-  static std::string DecodeKeyToString(const std::string& key);
-  static std::string DecodeRangeToString(const pb::common::Range& range);
+  static int64_t DecodeVectorIdFromUserKey(const std::string& user_key);
+  static int64_t DecodePartitionIdFromUserKey(const std::string& user_key);
 
-  static void DecodeRangeToVectorId(const pb::common::Range& range, int64_t& begin_vector_id, int64_t& end_vector_id);
+  static std::string DecodeRawKeyToString(const std::string& raw_key);
+  static std::string DecodeUserKeyToString(const std::string& user_key);
 
-  static bool IsValidKey(const std::string& key);
+  static std::string DecodeRawRangeToString(const pb::common::Range& raw_range);
+  static std::string DecodeUserRangeToString(const pb::common::Range& user_range);
+
+  static void DecodeUserRangeToVectorId(const pb::common::Range& user_range, int64_t& begin_vector_id,
+                                        int64_t& end_vector_id);
+
+  static bool IsValidUserKey(const std::string& user_key);
 };
 
 }  // namespace dingodb

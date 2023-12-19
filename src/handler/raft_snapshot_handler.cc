@@ -62,7 +62,7 @@ butil::Status RaftSnapshot::GenSnapshotFileByScan(const std::string& checkpoint_
     return butil::Status(pb::error::EINTERNAL, "Create directory failed");
   }
   auto raw_engine = std::dynamic_pointer_cast<RawRocksEngine>(engine_);
-  auto range = region->Range();
+  auto range = region->RawRange();
   // Build Iterator
   IteratorOptions options;
   options.upper_bound = range.end_key();
@@ -135,7 +135,7 @@ butil::Status RaftSnapshot::GenSnapshotFileByCheckpoint(const std::string& check
   }
 
   // Get region actual range
-  sst_files = FilterSstFile(tmp_sst_files, region->Range());
+  sst_files = FilterSstFile(tmp_sst_files, region->RawRange());
   for (const auto& sst_file : sst_files) {
     DINGO_LOG(INFO) << fmt::format("[raft.snapshot][region({})] sst file info: {}", region->Id(),
                                    sst_file.ShortDebugString());
@@ -257,28 +257,13 @@ butil::Status RaftSnapshot::HandleRaftSnapshotRegionMeta(braft::SnapshotReader* 
   }
 
   // Delete old region datas
-  std::vector<std::string> raw_cf_names;
-  std::vector<std::string> txn_cf_names;
+  std::vector<std::string> cf_names = Helper::GetColumnFamilyNames(region->Range().start_key());
+  pb::common::Range raw_range = region->RawRange();
 
-  Helper::GetColumnFamilyNames(region->Range().start_key(), raw_cf_names, txn_cf_names);
-
-  if (!raw_cf_names.empty()) {
-    status = engine_->Writer()->KvDeleteRange(raw_cf_names, region->Range());
-    if (!status.ok()) {
-      DINGO_LOG(ERROR) << fmt::format("[raft.snapshot][region({})] delete old region data raw failed, error: {}",
-                                      region->Id(), status.error_str());
-      return status;
-    }
-  }
-
-  if (!txn_cf_names.empty()) {
-    pb::common::Range txn_range = Helper::GetMemComparableRange(region->Range());
-    status = engine_->Writer()->KvDeleteRange(txn_cf_names, txn_range);
-    if (!status.ok()) {
-      DINGO_LOG(ERROR) << fmt::format("[raft.snapshot][region({})] delete old region data txn failed, error: {}",
-                                      region->Id(), status.error_str());
-      return status;
-    }
+  status = engine_->Writer()->KvDeleteRange(cf_names, raw_range);
+  if (!status.ok()) {
+    DINGO_LOG(FATAL) << fmt::format("[control.region][region({})] delete region data raw failed, error: {}",
+                                    region->Id(), status.error_str());
   }
 
   // update store_state_machine's applied_index from snapshot meta.
@@ -357,7 +342,7 @@ bool RaftSnapshot::LoadSnapshot(braft::SnapshotReader* reader, store::RegionPtr 
                                    merge_sst_file_paths.size());
 
     auto status =
-        RawRocksEngine::MergeCheckpointFiles(reader->get_path(), region->Range(), cf_names, merge_sst_file_paths);
+        RawRocksEngine::MergeCheckpointFiles(reader->get_path(), region->RawRange(), cf_names, merge_sst_file_paths);
     if (!status.ok()) {
       // Clean temp file
       for (const auto& merge_file_path : merge_sst_file_paths) {

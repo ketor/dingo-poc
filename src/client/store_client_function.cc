@@ -3016,8 +3016,8 @@ void AutoTest(std::shared_ptr<Context> ctx) {
 }
 
 bool IsSamePartition(dingodb::pb::common::Range source_range, dingodb::pb::common::Range target_range) {
-  return dingodb::VectorCodec::DecodePartitionId(source_range.end_key()) ==
-         dingodb::VectorCodec::DecodePartitionId(target_range.start_key());
+  return dingodb::VectorCodec::DecodePartitionIdFromUserKey(source_range.end_key()) ==
+         dingodb::VectorCodec::DecodePartitionIdFromUserKey(target_range.start_key());
 }
 
 void AutoMergeRegion(std::shared_ptr<Context> ctx) {
